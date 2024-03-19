@@ -25,11 +25,12 @@ class MaafItem(ABC):
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, item_dict: dict):
+    def from_dict(cls, item_dict: dict, partial: bool):
         """
         Convert a dictionary to an item.
 
         :param item_dict: The dictionary representation of the item
+        :param partial: Whether to allow creation from a dictionary with missing fields.
 
         :return: An item object
         """
@@ -86,7 +87,7 @@ class NestedDict(MaafItem):
 
 
 @dataclass
-class MaafList:
+class MaafList(MaafItem):
     items: list = field(default_factory=list)
     item_class = None
 
@@ -375,21 +376,86 @@ class MaafList:
         else:
             if DEBUG: print(f"!!! Remove item by id failed: {self.item_class} with id '{item_id}' does not exist in the item log !!!")
 
-    # ============================================================== From
-    def from_list(self, item_dicts_list: List[dict]) -> None:
-        """
-        Add a list of items to the item log.
-
-        :param item_dicts_list: A list of item dictionaries.
-        """
-        for item_dict in item_dicts_list:
-            self.add_item_by_dict(item_dict)
-
     # ============================================================== To
-    def to_list(self) -> List[dict]:
+    def asdict(self) -> dict:
         """
-        Convert the item log to a list of dictionaries.
+        Create a dictionary containing the fields of the maaflist data class instance with their current values.
 
-        :return: A list of dictionaries containing the fields of the items in the item log.
+        :return: A dictionary with field names as keys and current values.
         """
-        return [item.asdict() for item in self.items]
+        # -> Get the fields of the maaflist class
+        task_fields = fields(self)
+
+        # -> Exclude the local field
+        task_fields = [f for f in task_fields if f.name != "local"]
+
+        # -> Exclude the items field
+        task_fields = [f for f in task_fields if f.name != "items"]
+
+        # -> Create a dictionary with field names as keys and the value as values
+        fields_dict = {}
+
+        for field in task_fields:
+            # > If field value has asdict method, call it
+            if hasattr(getattr(self, field.name), "asdict"):
+                fields_dict[field.name] = getattr(self, field.name).asdict()
+
+            # > Else, add the field value to the dictionary
+            else:
+                fields_dict[field.name] = getattr(self, field.name)
+
+        # -> Add the items to the dictionary
+        fields_dict["items"] = [item.asdict() for item in self.items]
+
+        return fields_dict
+
+    # ============================================================== From
+    @classmethod
+    def from_dict(cls, maaflist_dict: dict, partial=False) -> None:
+        """
+        Construct a maaflist from a dictionary.
+
+        :param maaflist_dict: The dictionary representation of the maaflist.
+        :param partial: Whether to allow creation from a dictionary with missing fields.
+        """
+
+        # -> Get the fields of the maaflist class
+        maaflist_fields = fields(cls)
+
+        # -> Exclude the local field
+        maaflist_fields = [f for f in maaflist_fields if f.name != "local"]
+
+        # -> Exclude the items field
+        maaflist_fields = [f for f in maaflist_fields if f.name != "items"]
+
+        # -> Extract field names from the fields
+        field_names = {f.name for f in maaflist_fields}
+
+        if not partial:
+            # -> Check if all required fields are present in the dictionary
+            if not field_names.issubset(maaflist_dict.keys()):
+                raise ValueError(f"!!! MAAFList creation from dictionary failed: MAAFList dictionary is missing required fields: {maaflist_dict.keys() - field_names} !!!")
+
+        else:
+            # > Remove fields not present in the dictionary
+            maaflist_fields = [f for f in maaflist_fields if f.name in maaflist_dict]
+
+        # -> Extract values from the dictionary for the fields present in the class
+        field_values = {}
+
+        for field in maaflist_fields:
+            # > If field value has from_dict method, call it
+            if hasattr(field.type, "from_dict"):
+                field_values[field.name] = field.type.from_dict(maaflist_dict[field.name])
+            else:
+                field_values[field.name] = maaflist_dict[field.name]
+
+        # -> Create class instance
+        maaflist = cls(**field_values)
+
+        # -> Create items from the dictionary items
+        for item_dict in maaflist_dict["items"]:
+            maaflist.add_item_by_dict(item_dict)
+
+        # -> Create and return a Task object
+        return maaflist

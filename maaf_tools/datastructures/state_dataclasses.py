@@ -70,31 +70,33 @@ class Agent_state(State):
 
     # ============================================================== From
     @classmethod
-    def from_dict(cls, agent_dict: dict, allow_incomplete: bool = False) -> "State":
+    def from_dict(cls, agent_dict: dict, partial: bool = False) -> "State":
         """
         Convert a dictionary to a state.
 
         :param agent_dict: The dictionary representation of the state
-        :param allow_incomplete: Whether to allow the creation of a state from a dictionary that does not contain all the required fields
+        :param partial: Whether to allow creation from a dictionary with missing fields.
 
         :return: An agent object
         """
 
-        if not allow_incomplete:
-            # -> Get the fields of the Agent class
-            agent_fields = fields(cls)
+        # -> Get the fields of the Agent class
+        agent_fields = fields(cls)
 
-            # -> Extract field names from the fields
-            field_names = {field.name for field in agent_fields}
+        # -> Extract field names from the fields
+        field_names = {field.name for field in agent_fields}
 
+        if not partial:
             # -> Check if all required fields are present in the dictionary
             if not field_names.issubset(agent_dict.keys()):
                 raise ValueError(f"!!! State creation from dictionary failed: State dictionary is missing required fields: {agent_dict.keys() - field_names} !!!")
 
-            # -> Extract values from the dictionary for the fields present in the class
-            field_values = {field.name: agent_dict[field.name] for field in agent_fields}
         else:
-            field_values = agent_dict
+            # > Remove fields not present in the dictionary
+            agent_fields = [field for field in agent_fields if field.name in agent_dict]
+
+        # -> Extract values from the dictionary for the fields present in the class
+        field_values = {field.name: agent_dict[field.name] for field in agent_fields}
 
         # -> Create and return an Agent object
         return cls(**field_values)

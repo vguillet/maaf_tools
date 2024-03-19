@@ -73,7 +73,7 @@ class Agent(MaafItem):
 
     # ============================================================== From
     @classmethod
-    def from_dict(cls, agent_dict: dict) -> "Agent":
+    def from_dict(cls, agent_dict: dict, partial: bool = False) -> "Agent":
         """
         Convert a dictionary to an agent.
 
@@ -91,9 +91,14 @@ class Agent(MaafItem):
         # -> Extract field names from the fields
         field_names = {field.name for field in agent_fields}
 
-        # -> Check if all required fields are present in the dictionary
-        if not field_names.issubset(agent_dict.keys()):
-            raise ValueError(f"!!! Agent creation from dictionary failed: Agent dictionary is missing required fields: {agent_dict.keys() - field_names} !!!")
+        if not partial:
+            # -> Check if all required fields are present in the dictionary
+            if not field_names.issubset(agent_dict.keys()):
+                raise ValueError(f"!!! Agent creation from dictionary failed: Agent dictionary is missing required fields: {agent_dict.keys() - field_names} !!!")
+
+        else:
+            # > Remove all fields not present in the dictionary
+            agent_fields = [field for field in agent_fields if field.name in agent_dict]
 
         # -> Extract values from the dictionary for the fields present in the class
         field_values = {field.name: agent_dict[field.name] for field in agent_fields}
@@ -103,6 +108,7 @@ class Agent(MaafItem):
 
         # -> Create and return an Agent object
         return cls(**field_values)
+
 
 @dataclass
 class Fleet(MaafList):
@@ -312,7 +318,7 @@ if "__main__" == __name__:
     print("\nAdd agent to fleet:")
     fleet.add_agent(agent1)
     print(fleet)
-    print(fleet.to_list())
+    print(fleet.asdict())
 
     print("\nMark agent as inactive:")
     fleet.flag_agent_inactive(agent1)

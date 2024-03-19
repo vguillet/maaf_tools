@@ -1,8 +1,20 @@
 
+##################################################################################################################
+
+# Built-in/Generic Imports
+
+# Libs
+import networkx as nx
+from networkx import MultiGraph
+
+# Local Imports
 from dataclasses import dataclass, fields, field
 from typing import List, Optional
 from datetime import datetime
 from .dataclass_cores import MaafList, MaafItem
+# from maaf_tools.maaf_tools.datastructures.dataclass_cores import MaafList, MaafItem
+
+##################################################################################################################
 
 DEBUG = True
 
@@ -28,7 +40,7 @@ class Task(MaafItem):
     termination_source_id: Optional[str] = None
     status: str = "pending"     # pending, completed, cancelled
 
-    # name: str = ""
+    # > Wildcard fields
     shared: dict = field(default_factory=dict)  # Shared data of the agent, gets serialized and passed around
     local: dict = field(default_factory=dict)  # Local data of the agent, does not get serialized and passed around
 
@@ -64,27 +76,32 @@ class Task(MaafItem):
 
     # ============================================================== From
     @classmethod
-    def from_dict(cls, task_dict: dict):
+    def from_dict(cls, task_dict: dict, partial: bool = False) -> "Task":
         """
         Convert a dictionary to a task.
 
         :param task_dict: The dictionary representation of the task
+        :param partial: Whether to allow creation from a dictionary with missing fields.
 
         :return: A task object
         """
         # -> Get the fields of the Task class
         task_fields = fields(cls)
 
-        # -> Exclude the shared and local fields
-        task_fields = [f for f in task_fields if f.name != "shared"]
+        # -> Exclude the local field
         task_fields = [f for f in task_fields if f.name != "local"]
 
         # -> Extract field names from the fields
         field_names = {f.name for f in task_fields}
 
-        # -> Check if all required fields are present in the dictionary
-        if not field_names.issubset(task_dict.keys()):
-            raise ValueError(f"!!! Task creation from dictionary failed: Task dictionary is missing required fields: {task_dict.keys() - field_names} !!!")
+        if not partial:
+            # -> Check if all required fields are present in the dictionary
+            if not field_names.issubset(task_dict.keys()):
+                raise ValueError(f"!!! Task creation from dictionary failed: Task dictionary is missing required fields: {task_dict.keys() - field_names} !!!")
+
+        else:
+            # > Remove all fields not present in the dictionary
+            task_fields = [f for f in task_fields if f.name in task_dict.keys()]
 
         # -> Extract values from the dictionary for the fields present in the class
         field_values = {f.name: task_dict[f.name] for f in task_fields}
@@ -93,8 +110,64 @@ class Task(MaafItem):
         return cls(**field_values)
 
 
+class TaskGraph(MaafItem, MultiGraph):
+    def __init__(self):
+        super().__init__()
+
+    def add_path(self,
+                 source_node,
+                 target_node,
+                 path: List,
+                 ):
+        """
+        Add a path to the graph.
+        """
+
+        self.add_edge(
+            u_for_edge=source_node,
+            v_for_edge=target_node,
+            path=path
+        )
+
+    def get_path(self,
+                 source_node,
+                 target_node,
+                 ):
+        """
+        Get a path from the graph.
+        """
+        return self[source_node][target_node]["path"]
+
+    def asdict(self) -> dict:
+        """
+        Create a dictionary containing the fields of the Task data class instance with their current values.
+
+        :return: A dictionary with field names as keys and current values.
+        """
+        return {
+            "graph": nx.node_link_data(self),
+        }
+
+    @staticmethod
+    def from_dict(task_dict: dict, partial: bool = False):
+        """
+        Convert a dictionary to a TaskGraph.
+
+        :param task_dict: The dictionary representation of the graph
+        :param partial: Whether to allow creation from a dictionary with missing fields.
+
+        :return: A TaskGraph object
+        """
+        # -> Create a graph from the dictionary
+        graph = nx.node_link_graph(task_dict["graph"])
+
+        # -> Create and return a TaskGraph object
+        return graph
+
+
 @dataclass
 class Task_log(MaafList):
+    task_graph: TaskGraph = field(default_factory=TaskGraph)
     item_class = Task
     __on_status_change_listeners: list[callable] = field(default_factory=list)
 
@@ -312,47 +385,52 @@ class Task_log(MaafList):
             self.remove_item_by_id(item_id=task)
 
 
-if "__main__" == __name__:
-    # Test Task dataclass
-    # print("\nTest Task dataclass:")
-    task_1 = Task(
-        id=1,
-        type="delivery",
-        creator="John Doe",
-        affiliations=["aff1", "aff2"],
-        priority=3,
-        instructions=[("skill_1", "Deliver package to address 1"), ("skill_2", "Get signature from recipient")],
-        creation_timestamp=datetime.now()
-    )
-    # print(task_1)
-    # print(task_1.asdict())
-
-    task_2 = Task.from_dict(task_1.asdict())
-    # print(task_2)
-
-    # Test Task_log dataclass
-    # print("\nTest Task_log dataclass:")
+if __name__ == "__main__":
+    # -> Create task log
     task_log = Task_log()
 
-    # print("\nAdd tasks to the task log:")
-    task_log.add_task(task_1)
-    # print(task_log)
-    # print(task_log.to_list())
+    # -> Create tasks
+    task1 = Task(
+        id="task_1",
+        type="type_1",
+        creator="creator_1",
+        affiliations=["affiliation_1"],
+        priority=1,
+        instructions={"skill_1": "instruction_1"},
+        creation_timestamp=0
+    )
 
-    print("\nMark task 1 as completed:")
-    task_log.flag_task_completed(1)
+    task2 = Task(
+        id="task_2",
+        type="type_2",
+        creator="creator_2",
+        affiliations=["affiliation_2"],
+        priority=2,
+        instructions={"skill_2": "instruction_2"},
+        creation_timestamp=1
+    )
+
+    # -> Add tasks to task log
+    task_log.add_task([task1, task2])
+
+    # -> Print task log
     print(task_log)
 
-    print("\nMark task 1 as cancelled:")
-    task_log.flag_task_cancelled(1)
-    print(task_log)
+    # -> Add path between tasks
+    task_log.task_graph.add_path(
+        source_node=task1.id,
+        target_node=task2.id,
+        path=[task1.id, task2.id]
+    )
 
-    print("\nRemove task 1 from the task log:")
-    task_log.remove_task(1)
-    print(task_log)
+    # -> Serialise task log
+    task_log_serialised = task_log.asdict()
 
-    print("\nAdd multiple tasks to the task log:")
-    task_log.add_task(task_1)
-    task_log.add_task(task_2)
-    print(task_log)
+    print(task_log_serialised)
 
+    # -> Deserialise task log
+    task_log_deserialised = Task_log.from_dict(task_log_serialised)
+
+    print(task_log_deserialised)
+
+    print(task_log_deserialised.task_graph)
