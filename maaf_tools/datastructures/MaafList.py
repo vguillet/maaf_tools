@@ -1,89 +1,19 @@
 
+##################################################################################################################
+
 from dataclasses import dataclass, fields, field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from abc import ABC, abstractmethod
 
-DEBUG = True
+from maaf_tools.datastructures.MaafItem import MaafItem
+
+# from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+
+##################################################################################################################
 
 
-class MaafItem(ABC):
-    def __reduce__(self):
-        """
-        Reduce the item to a dictionary.
-        """
-        return self.__class__, (*self.asdict(),)  # -> Pass dictionary representation to constructor
-
-    @abstractmethod
-    def asdict(self) -> dict:
-        """
-        Create a dictionary containing the fields of the item data class instance with their current values.
-
-        :return: A dictionary with field names as keys and current values.
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, item_dict: dict, partial: bool):
-        """
-        Convert a dictionary to an item.
-
-        :param item_dict: The dictionary representation of the item
-        :param partial: Whether to allow creation from a dictionary with missing fields.
-
-        :return: An item object
-        """
-        pass
-
-
-@dataclass
-class NestedDict(MaafItem):
-    data: Dict[str, Any] = field(default_factory=dict)
-
-    def __getitem__(self, key):
-        if key not in self.data:
-            self.data[key] = NestedDict()
-        return self.data[key]
-
-    def __setitem__(self, key, value):
-        if key not in self.data:
-            self.data[key] = NestedDict()
-
-        self.data[key] = value
-
-    def asdict(self) -> dict:
-        """
-        Create a dictionary containing the fields of the item data class instance with their current values.
-
-        :return: A dictionary with field names as keys and current values.
-        """
-
-        data_dict = {}
-
-        for key, value in self.data.items():
-            if isinstance(value, NestedDict):
-                data_dict[key] = value.asdict()
-            else:
-                data_dict[key] = value
-
-        return data_dict
-
-    @classmethod
-    def from_dict(cls, item_dict: dict):
-        """
-        Convert a dictionary to an item.
-
-        :param item_dict: The dictionary representation of the item
-
-        :return: An item object
-        """
-
-        for key, value in item_dict.items():
-            if isinstance(value, dict):
-                item_dict[key] = cls().from_dict(value)
-
-        return cls(data=item_dict)
+DEBUG = False
 
 
 @dataclass
@@ -310,7 +240,7 @@ class MaafList(MaafItem):
         self.call_on_update_item_listeners(item)
 
     # ============================================================== Add
-    def add_item(self, item: item_class) -> None:
+    def add_item(self, item: item_class) -> bool:
         """
         Add an item to the item log. If the item is a list, add each item to the item log individually recursively.
 
@@ -320,6 +250,8 @@ class MaafList(MaafItem):
         # > If the item already exists, skip and warn user
         if item in self.items:
             if DEBUG: print(f"!!! Add item failed: {self.item_class} with id '{item.id}' already exists in the item log !!!")
+
+            return False
 
         # > else, add the item to the item log
         else:
@@ -331,7 +263,9 @@ class MaafList(MaafItem):
         # -> Call the on_add_item method
         self.call_on_add_item_listeners(item)
 
-    def add_item_by_dict(self, item_data: dict) -> None:
+        return True
+
+    def add_item_by_dict(self, item_data: dict) -> bool:
         """
         Add a item to the item log using a dictionary.
 
@@ -342,10 +276,10 @@ class MaafList(MaafItem):
         new_item = self.item_class.from_dict(item_data)
 
         # -> Add the item to the item log
-        self.add_item(new_item)
+        return self.add_item(new_item)
 
     # ============================================================== Remove
-    def remove_item(self, item: item_class) -> None:
+    def remove_item(self, item: item_class) -> bool:
         """
         Remove an item from the item log.
 
@@ -358,8 +292,12 @@ class MaafList(MaafItem):
         except ValueError:
             if DEBUG: print(f"!!! Remove item failed: {self.item_class} with id '{item.id}' does not exist in the item log !!!")
 
+            return False
+
         # -> Call the on_remove_item method
         self.call_on_remove_item_listeners(item)
+
+        return True
 
     def remove_item_by_id(self, item_id: str or int) -> None:
         """

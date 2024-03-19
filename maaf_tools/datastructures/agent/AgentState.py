@@ -1,20 +1,16 @@
 
+##################################################################################################################
 
 from dataclasses import dataclass, fields, field
-from .dataclass_cores import MaafItem
 
-# Create immutable data classes for the state of an item
+from maaf_tools.datastructures.MaafItem import MaafItem
+from maaf_tools.datastructures.state.State import State
 
-# @dataclass(frozen=True)
-@dataclass
-class State(MaafItem):
-    timestamp: float           # The timestamp of the state
+##################################################################################################################
 
-    def __str__(self) -> str:
-        return self.__repr__()
 
 @dataclass
-class Agent_state(State):
+class AgentState(State):
     # --- Metadata ---
     agent_id: str or int                # The ID of the agent the state is for
 
