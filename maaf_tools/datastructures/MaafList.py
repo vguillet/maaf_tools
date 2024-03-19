@@ -322,18 +322,21 @@ class MaafList(MaafItem):
         :return: A dictionary with field names as keys and current values.
         """
         # -> Get the fields of the maaflist class
-        task_fields = fields(self)
+        maaflist_fields = fields(self)
+
+        # -> Exclude all fields with __ in the name
+        maaflist_fields = [f for f in maaflist_fields if "__" not in f.name]
 
         # -> Exclude the local field
-        task_fields = [f for f in task_fields if f.name != "local"]
+        maaflist_fields = [f for f in maaflist_fields if f.name != "local"]
 
         # -> Exclude the items field
-        task_fields = [f for f in task_fields if f.name != "items"]
+        maaflist_fields = [f for f in maaflist_fields if f.name != "items"]
 
         # -> Create a dictionary with field names as keys and the value as values
         fields_dict = {}
 
-        for field in task_fields:
+        for field in maaflist_fields:
             # > If field value has asdict method, call it
             if hasattr(getattr(self, field.name), "asdict"):
                 fields_dict[field.name] = getattr(self, field.name).asdict()
@@ -359,6 +362,9 @@ class MaafList(MaafItem):
 
         # -> Get the fields of the maaflist class
         maaflist_fields = fields(cls)
+
+        # -> Exclude all fields with __ in the name
+        maaflist_fields = [f for f in maaflist_fields if "__" not in f.name]
 
         # -> Exclude the local field
         maaflist_fields = [f for f in maaflist_fields if f.name != "local"]

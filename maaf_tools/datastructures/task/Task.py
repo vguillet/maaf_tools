@@ -58,17 +58,20 @@ class Task(MaafItem):
         return affiliation in self.affiliations
 
     # ============================================================== To
-    def asdict(self) -> dict:
+    def asdict(self, include_local: bool = False) -> dict:
         """
         Create a dictionary containing the fields of the Task data class instance with their current values.
+
+        :param include_local: Whether to include the local field in the dictionary.
 
         :return: A dictionary with field names as keys and current values.
         """
         # -> Get the fields of the Task class
         task_fields = fields(self)
 
-        # -> Exclude the local field
-        task_fields = [f for f in task_fields if f.name != "local"]
+        if not include_local:
+            # > Exclude the local field
+            task_fields = [f for f in task_fields if f.name != "local"]
 
         # -> Create a dictionary with field names as keys and their current values
         fields_dict = {f.name: getattr(self, f.name) for f in task_fields}
@@ -89,8 +92,9 @@ class Task(MaafItem):
         # -> Get the fields of the Task class
         task_fields = fields(cls)
 
-        # -> Exclude the local field
-        task_fields = [f for f in task_fields if f.name != "local"]
+        # -> Exclude the local field if not provided
+        if "local" not in task_dict.keys():
+            task_fields = [f for f in task_fields if f.name != "local"]
 
         # -> Extract field names from the fields
         field_names = {f.name for f in task_fields}

@@ -6,6 +6,7 @@ from typing import List, Optional
 from maaf_tools.datastructures.MaafItem import MaafItem
 from maaf_tools.datastructures.MaafList import MaafList
 from maaf_tools.datastructures.agent.AgentState import AgentState
+from maaf_tools.datastructures.agent.Plan import Plan
 
 ##################################################################################################################
 
@@ -21,10 +22,12 @@ class Agent(MaafItem):
     affiliations: List[str]                 # Affiliations of the agent
     specs: dict                             # Specifications of the agent
     skillset: List[str]                     # Skillset of the agent
-    state: AgentState                      # State of the agent, state object
+    state: AgentState                       # State of the agent, state object
 
     # shared: NestedDict = field(default_factory=NestedDict)  # Shared data of the agent, gets serialized and passed around
     # local: NestedDict = field(default_factory=NestedDict)   # Local data of the agent, does not get serialized and passed around
+
+    plan: Plan                              # Plan of the agent, plan object
 
     shared: dict = field(default_factory=dict)  # Shared data of the agent, gets serialized and passed around
     local: dict = field(default_factory=dict)   # Local data of the agent, does not get serialized and passed around
@@ -55,23 +58,29 @@ class Agent(MaafItem):
         return affiliation in self.affiliations
 
     # ============================================================== To
-    def asdict(self) -> dict:
+    def asdict(self, include_local: bool = False) -> dict:
         """
         Create a dictionary containing the fields of the Agent data class instance with their current values.
+
+        :param include_local: Whether to include the local data in the dictionary
 
         :return: A dictionary with field names as keys and current values.
         """
         # -> Get the fields of the Agent class
         agent_fields = fields(self)
 
-        # > Exclude the local field
-        agent_fields = [f for f in agent_fields if f.name != "local"]
+        if not include_local:
+            # > Exclude the local field
+            agent_fields = [f for f in agent_fields if f.name != "local"]
 
         # -> Create a dictionary with field names as keys and their current values
         fields_dict = {f.name: getattr(self, f.name) for f in agent_fields}
 
         # -> Convert state to dict
         fields_dict["state"] = self.state.asdict()
+
+        # -> Convert plan to dict
+        fields_dict["plan"] = self.plan.asdict()
 
         return fields_dict
 
@@ -88,9 +97,9 @@ class Agent(MaafItem):
         # -> Get the fields of the Agent class
         agent_fields = fields(cls)
 
-        # > Exclude the shared and local fields
-        agent_fields = [f for f in agent_fields if f.name != "shared"]
-        agent_fields = [f for f in agent_fields if f.name != "local"]
+        # > Exclude the local field if not provided
+        if "local" not in agent_dict.keys():
+            agent_fields = [f for f in agent_fields if f.name != "local"]
 
         # -> Extract field names from the fields
         field_names = {field.name for field in agent_fields}
@@ -109,6 +118,9 @@ class Agent(MaafItem):
 
         # -> Convert state from dict
         field_values["state"] = AgentState.from_dict(agent_dict["state"])
+
+        # -> Convert plan from dict
+        field_values["plan"] = Plan.from_dict(agent_dict["plan"])
 
         # -> Create and return an Agent object
         return cls(**field_values)

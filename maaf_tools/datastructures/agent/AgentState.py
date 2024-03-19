@@ -52,11 +52,11 @@ class AgentState(State):
     # ============================================================== To
     def asdict(self) -> dict:
         """
-        Create a dictionary containing the fields of the State data class instance with their current values.
+        Create a dictionary containing the fields of the AgentState data class instance with their current values.
 
         :return: A dictionary with field names as keys and current values.
         """
-        # -> Get the fields of the State class
+        # -> Get the fields of the Agent class
         state_fields = fields(self)
 
         # -> Create a dictionary with field names as keys and their current values
@@ -66,17 +66,17 @@ class AgentState(State):
 
     # ============================================================== From
     @classmethod
-    def from_dict(cls, agent_dict: dict, partial: bool = False) -> "State":
+    def from_dict(cls, agent_dict: dict, partial: bool = False) -> "AgentState":
         """
-        Convert a dictionary to a state.
+        Convert a dictionary to an AgentState.
 
-        :param agent_dict: The dictionary representation of the state
+        :param agent_dict: The dictionary representation of the AgentState
         :param partial: Whether to allow creation from a dictionary with missing fields.
 
         :return: An agent object
         """
 
-        # -> Get the fields of the Agent class
+        # -> Get the fields of the AgentState class
         agent_fields = fields(cls)
 
         # -> Extract field names from the fields
@@ -85,7 +85,7 @@ class AgentState(State):
         if not partial:
             # -> Check if all required fields are present in the dictionary
             if not field_names.issubset(agent_dict.keys()):
-                raise ValueError(f"!!! State creation from dictionary failed: State dictionary is missing required fields: {agent_dict.keys() - field_names} !!!")
+                raise ValueError(f"!!! AgentState creation from dictionary failed: AgentState dictionary is missing required fields: {agent_dict.keys() - field_names} !!!")
 
         else:
             # > Remove fields not present in the dictionary

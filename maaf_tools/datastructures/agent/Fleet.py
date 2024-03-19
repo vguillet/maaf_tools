@@ -9,6 +9,7 @@ from copy import deepcopy
 from maaf_tools.datastructures.MaafList import MaafList
 
 from maaf_tools.datastructures.agent.AgentState import AgentState
+from maaf_tools.datastructures.agent.Plan import Plan
 from maaf_tools.datastructures.agent.Agent import Agent
 
 ##################################################################################################################
@@ -125,7 +126,6 @@ class Fleet(MaafList):
         return filtered_agents
 
     # ============================================================== Set
-
     def set_agent_state(self, agent: str or int or item_class or List[int or str or item_class], state: dict or AgentState) -> None:
         """
         Set the state of an agent in the fleet. State can be a "active" or "inactive" string
@@ -148,6 +148,23 @@ class Fleet(MaafList):
         # -> Call on state change listeners
         if prev_state != agent.state:
             self.call_on_state_change_listeners(agent)
+
+    def set_agent_plan(self, agent: str or int or item_class or List[int or str or item_class], plan: dict or Plan) -> None:
+        """
+        Set the plan of an agent in the fleet.
+
+        :param agent: The agent to set the plan for. Can be the agent object, the agent ID, or a list of agent IDs.
+        :param plan: The plan to set for the agent. Can be a dictionary or a Plan object.
+        """
+        # -> If the plan is a dictionary, convert it to a Plan object
+        if isinstance(plan, dict):
+            plan = Plan.from_dict(plan)
+
+        # -> Update the plan of the agent
+        self.update_item_fields(
+            item=agent,
+            field_value_pair={"plan": plan}
+        )
 
     # ============================================================== Add
     def add_agent(self, agent: dict or Agent or List[dict or Agent]) -> None:
