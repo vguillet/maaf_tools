@@ -5,10 +5,13 @@ from dataclasses import dataclass, fields, field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from abc import ABC, abstractmethod
+import pandas as pd
 
-from maaf_tools.datastructures.MaafItem import MaafItem
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
 
-# from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
 
@@ -175,6 +178,12 @@ class MaafList(MaafItem):
         """
         return self.__class__, (self.items,)
 
+    def clone(self) -> "MaafList":
+        """
+        Clone the item log.
+        """
+        return self.from_dict(self.asdict())
+
     # ============================================================== Set
     def update_item_fields(self,
                            item: int or str or item_class,
@@ -239,6 +248,32 @@ class MaafList(MaafItem):
         # -> Call the on_update_item method
         self.call_on_update_item_listeners(item)
 
+    # ============================================================== Merge
+    def merge(self, item_list: "MaafList", prioritise_local: bool = False) -> None:
+        """
+        Merge the items of another item list into the item list.
+
+        :param item_list: The item log to merge into the item log.
+        :param prioritise_local: Whether to prioritise the local field of the item over the shared field.
+        """
+
+        # -> Check if the item log is of the same type
+        if self.item_class != item_list.item_class:
+            raise ValueError(f"!!! Merge item log failed: Merging item list with different item class '{item_list.item_class}' into item list with item class '{self.item_class}' !!!")
+
+        # -> For all items not in item list
+        for item_id in item_list.ids:
+            if item_id not in self.ids:
+                self.add_item(item_list[item_id])
+
+            elif not prioritise_local:
+                local_item = self[item_id]
+                new_item = item_list[item_id]               # > retrieve the new item
+                new_item.local = local_item.local           # > add the local field of the old item to the new item
+
+                self.remove_item(local_item)                # > remove the old item
+                self.add_item(new_item)                     # > add the new item
+
     # ============================================================== Add
     def add_item(self, item: item_class) -> bool:
         """
@@ -255,10 +290,19 @@ class MaafList(MaafItem):
 
         # > else, add the item to the item log
         else:
-            self.items.append(item)
+            # Insert item in the correct position (order by increasing id)
+            for i, item_ in enumerate(self.items):
+                if item_.id > item.id:
+                    self.items.insert(i, item)
+                    break
+
+            else:
+                self.items.append(item)
+
+            # self.items.append(item)
 
         # -> Sort items list by id
-        self.sort(key=lambda x: x.id)
+        # self.sort(key=lambda x: x.id)
 
         # -> Call the on_add_item method
         self.call_on_add_item_listeners(item)
@@ -349,6 +393,44 @@ class MaafList(MaafItem):
         fields_dict["items"] = [item.asdict() for item in self.items]
 
         return fields_dict
+
+    def asdf(self) -> pd.DataFrame:
+        """
+        Create a pandas DataFrame from the items in the item list.
+
+        :return: A pandas DataFrame with the items in the item list.
+        """
+        # -> Get the fields of the item class
+        item_fields = fields(self.item_class)
+
+        # -> Exclude all fields with __ in the name
+        item_fields = [f for f in item_fields if "__" not in f.name]
+
+        # -> Create a dictionary with field names as keys and the value as values
+        items_df = pd.DataFrame(columns=[f.name for f in item_fields])
+
+        for item in self.items:
+            # > Create a dictionary with field names as keys and the value as values
+            item_dict = {}
+
+            for field in item_fields:
+                # > If field value has asdict method, call it
+                if hasattr(getattr(item, field.name), "asdict"):
+                    field_dict = getattr(item, field.name).asdict()
+
+                    for key, value in field_dict.items():
+                        if "__" not in key:
+                            item_dict[key] = value
+
+                # > Else, add the field value to the dictionary
+                else:
+                    item_dict[field.name] = getattr(item, field.name)
+
+            # > Add the dictionary as new row to the DataFrame
+            items_df = items_df._append(item_dict, ignore_index=True)
+
+        # -> Create a pandas DataFrame from the dictionary
+        return items_df
 
     # ============================================================== From
     @classmethod

@@ -2,7 +2,12 @@
 ##################################################################################################################
 
 from dataclasses import dataclass, fields, field
-from maaf_tools.datastructures.MaafItem import MaafItem
+
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
+
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
 

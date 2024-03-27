@@ -6,11 +6,19 @@ from typing import List, Optional
 from datetime import datetime
 from copy import deepcopy
 
-from maaf_tools.datastructures.MaafList import MaafList
+try:
+    from maaf_tools.datastructures.MaafList import MaafList
 
-from maaf_tools.datastructures.agent.AgentState import AgentState
-from maaf_tools.datastructures.agent.Plan import Plan
-from maaf_tools.datastructures.agent.Agent import Agent
+    from maaf_tools.datastructures.agent.AgentState import AgentState
+    from maaf_tools.datastructures.agent.Plan import Plan
+    from maaf_tools.datastructures.agent.Agent import Agent
+
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
+
+    from maaf_tools.maaf_tools.datastructures.agent.AgentState import AgentState
+    from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
+    from maaf_tools.maaf_tools.datastructures.agent.Agent import Agent
 
 ##################################################################################################################
 
@@ -166,6 +174,71 @@ class Fleet(MaafList):
             field_value_pair={"plan": plan}
         )
 
+    # ============================================================== Merge
+    def merge_fleets(self,
+                     fleet: "Fleet",
+                     add_agent_callback: Optional[callable] = None,
+                     remove_agent_callback: Optional[callable] = None,
+                     fleet_state_change_callback: Optional[callable] = None
+                     ) -> bool:
+        """
+        Merge the fleet with another fleet. The local fleet can be prioritised over the new fleet.
+
+        :param fleet: The fleet to merge with the local fleet.
+        :param add_agent_callback: A callback function to call when an agent is added to the fleet.
+        :param remove_agent_callback: A callback function to call when an agent is removed from the fleet.
+        :param fleet_state_change_callback: A callback function to call at the end of the merge if the fleet state has changed.
+
+        :return: A boolean indicating whether the fleet state has changed.
+        """
+
+        if fleet is None:
+            return False
+
+        fleet_state_change = False
+
+        # -> For all agents in the fleet to merge ...
+        for agent in fleet:
+            # -> If the agent is not in the local fleet ...
+            if agent.id not in self.ids:
+                # -> If the agent is active, add to fleet and extend local states with new columns
+                if agent.state.status == "active":
+                    self.add_agent(agent=agent)             # Add agent to the fleet
+
+                    if add_agent_callback is not None:
+                        add_agent_callback(agent=agent)     # Call the add agent callback
+
+                    fleet_state_change = True               # Set the fleet state change flag to True
+
+                # -> If the agent is inactive, only add to the local fleet
+                else:
+                    self.add_agent(agent=agent)             # Add agent to the fleet
+
+            # -> Else if the new agent state is more recent than the local agent state, update
+            elif agent.state.timestamp > self[agent.id].state.timestamp:
+                # -> If the agent is active, update the agent state in the fleet to the latest state
+                if agent.state.status == "active":
+                    self.set_agent_state(agent=agent, state=agent.state)
+                    self.set_agent_plan(agent=agent, plan=agent.plan)
+
+                    fleet_state_change = True
+
+                # -> If the agent is inactive, update state and remove agent from local states
+                else:
+                    # -> Remove agent from local fleet
+                    self.set_agent_state(agent=agent, state=agent.state)    # Update the agent state
+
+                    if remove_agent_callback is not None:
+                        remove_agent_callback(agent=agent)                  # Call the remove agent callback
+
+                    fleet_state_change = True                               # Set the fleet state change flag to True
+
+        # -> Call the fleet state change callback if the fleet state has changed
+        if fleet_state_change_callback is not None and fleet_state_change:
+            fleet_state_change_callback()
+
+        return fleet_state_change
+
     # ============================================================== Add
     def add_agent(self, agent: dict or Agent or List[dict or Agent]) -> None:
         """
@@ -208,7 +281,7 @@ class Fleet(MaafList):
 if "__main__" == __name__:
     # Test Agent data class
     agent1 = Agent(
-        id=1,
+        id="1",
         name="Agent 1",
         agent_class="class 1",
         hierarchy_level=1,
@@ -225,36 +298,35 @@ if "__main__" == __name__:
             z=0,
             u=0,
             v=0,
-            w=0
-        )
+            w=0,
+        ),
+        plan=Plan(),
+        local={"local1": "value1"},
     )
-    print(agent1)
-    print(agent1.asdict())
 
     agent2 = Agent.from_dict(agent1.asdict())
-    print(agent2)
+    agent2.name = "Agent 2"
+    agent2.id = "2"
+    agent2.local["local1"] = "value2"
+
+    print(agent1.id, agent1.name, agent1.local)
+    print(agent2.id, agent2.name, agent2.local)
 
     # Test Fleet data class
-    print("\nTest Fleet dataclass\n")
-    fleet = Fleet()
+    fleet_1 = Fleet()
+    fleet_1.add_agent(agent1)
 
-    print("\nAdd agent to fleet:")
-    fleet.add_agent(agent1)
-    print(fleet)
-    print(fleet.asdict())
+    fleet_2 = Fleet()
+    fleet_2.add_agent(agent2)
 
-    print("\nMark agent as inactive:")
-    fleet.flag_agent_inactive(agent1)
-    print(fleet)
+    print(fleet_1)
+    print(fleet_2)
 
-    print("\nMark agent as active:")
-    fleet.flag_agent_active(agent1)
-    print(fleet)
+    print(fleet_1["1"].name, fleet_1["1"].local)
+    fleet_1.merge(fleet_2, prioritise_local=False)
+    print(fleet_1["1"].name, fleet_1["1"].local)
 
-    print("\nRemove agent from fleet:")
-    fleet.remove_agent(agent1)
-    print(fleet)
-
+    print(fleet_1.asdf().to_string())
 
 
 

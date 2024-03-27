@@ -2,15 +2,24 @@
 ##################################################################################################################
 
 from dataclasses import dataclass, fields, field
-from maaf_tools.datastructures.MaafItem import MaafItem
+import networkx as nx
+
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.datastructures.task.TaskLog import TaskLog
+    from maaf_tools.datastructures.task.Task import Task
+
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
+    from maaf_tools.maaf_tools.datastructures.task.Task import Task
 
 ##################################################################################################################
 
 
 @dataclass
 class Plan(MaafItem):
-    recompute: bool = False
-    task_bundle: list[str] = field(default_factory=list)  # List of tasks to be executed
+    task_bundle: list[Task] = field(default_factory=list)  # List of tasks to be executed
     path: list[str] = field(default_factory=list)         # List of waypoints to be visited
 
     def __repr__(self) -> str:
@@ -30,6 +39,37 @@ class Plan(MaafItem):
         Check if the plan has a specific waypoint
         """
         return waypoint_id in self.path
+
+    # ============================================================== Get
+    def update_path(self,
+                    tasklog: TaskLog,
+                    selection: str = "shortest"  # "shortest", "longest", "random"
+                    ) -> bool:
+        """
+        Get the path of the plan as a list of waypoints. The path is obtained from the tasks graph, in which
+        the path between two nodes is stored in the corresponding edge.
+
+        :param tasklog: The graph containing the tasks and the paths between them.
+        :param selection: The selection method for the path. Options: "shortest", "longest", "random"
+        """
+
+        node_bundle = ["agent"] + [task.id for task in self.task_bundle]
+
+        sequence_paths_list, sequence_path_exist = tasklog.get_sequence_path(
+                node_sequence=node_bundle,
+                requirement=None,        # TODO: Fix once agents have requirements
+                selection=selection
+                )
+
+        # -> Check if a path exists for each step of the sequence
+        for path in sequence_path_exist:
+            assert path, f"!!! Plan path update failed: No path found for bundle {node_bundle} !!!"
+
+        # -> Check if path exists for every step of the bundle
+        for path in sequence_paths_list:
+            self.path = path["path"][1:]
+
+        return True
 
     # ============================================================== To
     def asdict(self) -> dict:

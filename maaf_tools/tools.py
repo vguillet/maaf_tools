@@ -1,8 +1,54 @@
 
 from math import pi
 from numpy import arctan2, arcsin
+import networkx as nx
+from json import loads, dumps
 
 from rclpy.time import Time
+
+
+def graph_to_json(graph, pos) -> str:
+    """
+    Convert the graph and the positions to a JSON string.
+
+    :return: The JSON string representation of the graph.
+    """
+
+    graph_json = {
+        "env_type": "graph",
+        "graph": nx.node_link_data(graph),
+        "pos": {str(k): v for k, v in pos.items()}
+    }
+
+    return graph_json
+
+
+def json_to_graph(graph_json: str) -> (nx.Graph, dict):
+    """
+    Convert a JSON string to a graph.
+
+    :param graph_json: The JSON string representation of the graph.
+
+    :return: A graph object.
+    :return: A dictionary containing the positions of the nodes.
+    """
+
+    if type(graph_json) == str:
+        data = loads(graph_json)
+    else:
+        data = graph_json
+
+    graph = nx.node_link_graph(data["graph"])
+    pos = {eval(k): v for k, v in data["pos"].items()}
+    env_type = data["env_type"]
+
+    env = {
+        "env_type": env_type,
+        "graph": graph,
+        "pos": pos
+        }
+
+    return env
 
 
 def euler_from_quaternion(quat):

@@ -11,18 +11,19 @@ import networkx as nx
 from networkx import MultiGraph
 
 # Local Imports
-from maaf_tools.datastructures.MaafItem import MaafItem
-from maaf_tools.datastructures.MaafList import MaafList
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.datastructures.MaafList import MaafList
 
-from maaf_tools.datastructures.task.Task import Task
-from maaf_tools.datastructures.task.TaskGraph import TaskGraph
+    from maaf_tools.datastructures.task.Task import Task
+    from maaf_tools.datastructures.task.TaskGraph import TaskGraph
 
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
 
-# from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
-# from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
-#
-# from maaf_tools.maaf_tools.datastructures.task.Task import Task
-# from maaf_tools.maaf_tools.datastructures.task.TaskGraph import TaskGraph
+    from maaf_tools.maaf_tools.datastructures.task.Task import Task
+    from maaf_tools.maaf_tools.datastructures.task.TaskGraph import TaskGraph
 
 
 ##################################################################################################################
@@ -33,6 +34,14 @@ class TaskLog(MaafList):
     task_graph: TaskGraph = field(default_factory=TaskGraph)
     item_class = Task
     __on_status_change_listeners: list[callable] = field(default_factory=list)
+
+    def init_tasklog(self):
+        """
+        Initialise the task log. Must be called after the task log has been created.
+        """
+
+        # -> Add agent to task graph
+        self.task_graph.add_agent()
 
     def __repr__(self):
         return f"Task log: {len(self.items)} tasks ({len(self.tasks_completed)} completed, {len(self.tasks_pending)} pending, {len(self.tasks_cancelled)} cancelled)"
@@ -55,13 +64,6 @@ class TaskLog(MaafList):
     # ============================================================== Properties
     # ------------------------------ IDs
     @property
-    def ids_completed(self) -> list[int]:
-        """
-        Get a list of completed task ids in the task log.
-        """
-        return [task.id for task in self.tasks_completed]
-
-    @property
     def ids_pending(self) -> list[int]:
         """
         Get a list of pending task ids in the task log.
@@ -75,14 +77,21 @@ class TaskLog(MaafList):
         """
         return [task.id for task in self.tasks_cancelled]
 
-    # ------------------------------ Tasks
     @property
-    def tasks_completed(self) -> list[Task]:
+    def ids_completed(self) -> list[int]:
         """
-        Get a list of completed tasks in the task log.
+        Get a list of completed task ids in the task log.
         """
-        return [task for task in self.items if task.status == "completed"]
+        return [task.id for task in self.tasks_completed]
 
+    @property
+    def ids_terminated(self) -> list[int]:
+        """
+        Get a list of terminated task ids in the task log.
+        """
+        return [task.id for task in self.tasks_terminated]
+
+    # ------------------------------ Tasks
     @property
     def tasks_pending(self) -> list[Task]:
         """
@@ -96,6 +105,20 @@ class TaskLog(MaafList):
         Get a list of cancelled tasks in the task log.
         """
         return [task for task in self.items if task.status == "cancelled"]
+
+    @property
+    def tasks_completed(self) -> list[Task]:
+        """
+        Get a list of completed tasks in the task log.
+        """
+        return [task for task in self.items if task.status == "completed"]
+
+    @property
+    def tasks_terminated(self) -> list[Task]:
+        """
+        Get a list of terminated tasks in the task log.
+        """
+        return [task for task in self.items if task.status in ["cancelled", "completed"]]
 
     # ============================================================== Get
     def query(
@@ -128,6 +151,27 @@ class TaskLog(MaafList):
             filtered_tasks = [task for task in filtered_tasks if task.status == status]
 
         return filtered_tasks
+
+    def get_sequence_path(self,
+                          node_sequence: List[str],
+                          requirement: Optional[List[str]] = None,
+                          selection: str = "shortest"   # "shortest", "longest", "random", "all"
+                          ) -> (List[dict], List):
+        """
+        Get a path from the graph.
+
+        :param node_sequence: The sequence of nodes to get the path for.
+        :param requirement: The acceptable requirements for the path.
+        :param selection: The selection method for the path if multiple meet the requirements. "shortest", "longest", "random", "all"
+
+        :return: The path between the nodes.
+        """
+
+        return self.task_graph.get_sequence_path(
+            node_sequence=node_sequence,
+            requirement=requirement,
+            selection=selection
+        )
 
     # ============================================================== Set
     def set_task_status(self,
@@ -209,6 +253,79 @@ class TaskLog(MaafList):
             termination_timestamp=termination_timestamp
         )
 
+    # ============================================================== Merge
+    def merge_tasklogs(self,
+                       tasklog: "TaskLog",
+                       add_task_callback: Optional[callable] = None,
+                       terminate_task_callback: Optional[callable] = None,
+                       task_state_change_callback: Optional[callable] = None
+                       ) -> bool:
+        """
+        Merge the tasks from another task log into this task log. If a task with the same id exists in both task logs,
+
+        :param tasklog: The task log to merge with this task log.
+        :param add_task_callback: A callback function to call when a task is added to the task log.
+        :param terminate_task_callback: A callback function to call when a task is terminated in the task log.
+        :param task_state_change_callback: A callback function to call at the end of the merge if the task log state has changed.
+
+        :return: A boolean indicating whether the tasklog state has changed
+        """
+
+        if tasklog is None:
+            return False
+
+        task_state_change = False
+
+        # -> For all tasks in the task log to merge ...
+        for task in tasklog:
+            # -> If the task is not in the task log ...
+            if task.id not in self.ids:
+                # -> If the task is pending, add to task log and extend local states with new rows
+                if task.status == "pending":
+                    self.add_task(task=task)
+
+                    if add_task_callback:
+                        add_task_callback(task=task)
+
+                    task_state_change = True
+
+                # -> If the task is completed, only add to the task log (do not recompute bids)
+                else:
+                    self.add_task(task=task)
+
+            # -> Else if the task is in the task log and is not pending, flag as terminated in task log and remove rows from the local states
+            elif task.status != "pending" and self[task.id].status == "pending":
+                if task.status == "completed":
+                    self.flag_task_completed(
+                        task=task,
+                        termination_source_id=task.termination_source_id,
+                        termination_timestamp=task.termination_timestamp
+                    )
+
+                elif task.status == "cancelled":
+                    self.flag_task_cancelled(
+                        task=task,
+                        termination_source_id=task.termination_source_id,
+                        termination_timestamp=task.termination_timestamp
+                    )
+
+                else:
+                    raise ValueError(f"Task status {task.status} not recognised")
+
+                if terminate_task_callback:
+                    terminate_task_callback(task=task)
+
+                task_state_change = True
+
+            else:
+                pass
+
+        # -> Call the task state change callback if the task state has changed
+        if task_state_change_callback is not None and task_state_change:
+            task_state_change_callback()
+
+        return task_state_change
+
     # ============================================================== Add
     def add_task(self, task: dict or item_class or List[dict or item_class]) -> None:
         """
@@ -231,6 +348,36 @@ class TaskLog(MaafList):
         if success:
             # -> Add node in task graph
             self.task_graph.add_node(task.id)
+
+    def add_path(self,
+                 source_node: str,
+                 target_node: str,
+                 path: dict or List[dict],
+                 two_way: bool = True,
+                 selection: str = "latest",   # "shortest", "longest", "random", "latest", "all"
+                 ) -> None:
+        """
+        Add a path to the graph.
+
+        :param source_node: The source node of the path.
+        :param target_node: The target node of the path.
+        :param path: The path to add.
+        :param two_way: Whether to add the path in both directions.
+        :param selection: The selection method for the path if multiple meet the requirements.
+            "shortest" : Replace the current shortest path with the new path if the new path is shorter.
+            "longest"  : Replace the current longest path with the new path if the new path is longer.
+            "random"   : Randomly replace a path with the new path.
+            "latest"   : Replace all current paths with the new path.
+            "all"      : Keep all paths. Add the new path to the list of paths.
+        """
+
+        self.task_graph.add_path(
+            source_node=source_node,
+            target_node=target_node,
+            path=path,
+            two_way=two_way,
+            selection=selection
+        )
 
     # ============================================================== Remove
     def remove_task(self, task: int or str or item_class or List[int or str or item_class]) -> None:
@@ -257,6 +404,8 @@ class TaskLog(MaafList):
 
 
 if __name__ == "__main__":
+    from pprint import pprint
+
     # -> Create task log
     task_log = TaskLog()
 
@@ -281,8 +430,18 @@ if __name__ == "__main__":
         creation_timestamp=1
     )
 
+    task3 = Task(
+        id="task_3",
+        type="type_3",
+        creator="creator_2",
+        affiliations=["affiliation_2"],
+        priority=2,
+        instructions={"skill_2": "instruction_2"},
+        creation_timestamp=1
+    )
+
     # -> Add tasks to task log
-    task_log.add_task([task1, task2])
+    task_log.add_task([task1, task2, task3])
 
     # -> Print task log
     print(task_log)
@@ -293,13 +452,37 @@ if __name__ == "__main__":
     task_log.task_graph.add_path(
         source_node=task1.id,
         target_node=task2.id,
-        path=[task1.id, task2.id]
+        path={
+            "id": "path_1",
+            "requirements": ["skill_1"],
+            "path": [task1.id, task2.id]
+        }
+    )
+
+    task_log.task_graph.add_path(
+        source_node=task2.id,
+        target_node=task3.id,
+        path={
+            "id": "path_2",
+            "requirements": ["skill_2"],
+            "path": [task2.id, task3.id]
+        }
+    )
+
+    task_log.task_graph.add_path(
+        source_node=task1.id,
+        target_node=task3.id,
+        path={
+            "id": "path_3",
+            "requirements": ["skill_1"],
+            "path": [task1.id, task3.id]
+        }
     )
 
     # -> Serialise task log
     task_log_serialised = task_log.asdict()
 
-    print(task_log_serialised)
+    pprint(task_log_serialised)
 
     # -> Deserialise task log
     task_log_deserialised = TaskLog.from_dict(task_log_serialised)
@@ -307,3 +490,5 @@ if __name__ == "__main__":
     print(task_log_deserialised)
 
     print(task_log_deserialised.task_graph)
+
+    print(task_log.asdf().to_string())

@@ -3,10 +3,21 @@
 from dataclasses import dataclass, fields, field
 from typing import List, Optional
 
-from maaf_tools.datastructures.MaafItem import MaafItem
-from maaf_tools.datastructures.MaafList import MaafList
-from maaf_tools.datastructures.agent.AgentState import AgentState
-from maaf_tools.datastructures.agent.Plan import Plan
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.datastructures.MaafList import MaafList
+
+    from maaf_tools.datastructures.agent.AgentState import AgentState
+    from maaf_tools.datastructures.agent.Plan import Plan
+    from maaf_tools.datastructures.task.TaskLog import TaskLog
+
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
+
+    from maaf_tools.maaf_tools.datastructures.agent.AgentState import AgentState
+    from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
+    from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
 
 ##################################################################################################################
 
@@ -57,6 +68,21 @@ class Agent(MaafItem):
         """
         return affiliation in self.affiliations
 
+    def update_plan(self,
+                    tasklog: TaskLog,
+                    selection: str = "shortest"     # "shortest", "longest", "random"
+                    ):
+        """
+        Update the plan of the agent with the path obtained from a tasklog.
+
+        :param tasklog: The tasklog containing the tasks and the paths between them.
+        :param selection: The selection method for the path between tasks.
+        """
+        self.plan.update_path(
+            tasklog=tasklog,
+            selection=selection
+        )
+
     # ============================================================== To
     def asdict(self, include_local: bool = False) -> dict:
         """
@@ -102,7 +128,7 @@ class Agent(MaafItem):
             agent_fields = [f for f in agent_fields if f.name != "local"]
 
         # -> Extract field names from the fields
-        field_names = {field.name for field in agent_fields}
+        field_names = {f.name for f in agent_fields}
 
         if not partial:
             # -> Check if all required fields are present in the dictionary
@@ -111,10 +137,10 @@ class Agent(MaafItem):
 
         else:
             # > Remove all fields not present in the dictionary
-            agent_fields = [field for field in agent_fields if field.name in agent_dict]
+            agent_fields = [f for f in agent_fields if f.name in agent_dict]
 
         # -> Extract values from the dictionary for the fields present in the class
-        field_values = {field.name: agent_dict[field.name] for field in agent_fields}
+        field_values = {f.name: agent_dict[f.name] for f in agent_fields}
 
         # -> Convert state from dict
         field_values["state"] = AgentState.from_dict(agent_dict["state"])

@@ -6,7 +6,11 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from abc import ABC, abstractmethod
 
-from maaf_tools.datastructures.MaafItem import MaafItem
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
+
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
 

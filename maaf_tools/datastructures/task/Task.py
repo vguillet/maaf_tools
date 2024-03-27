@@ -11,9 +11,11 @@ import networkx as nx
 from networkx import MultiGraph
 
 # Local Imports
-from maaf_tools.datastructures.MaafItem import MaafItem
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
 
-# from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
 

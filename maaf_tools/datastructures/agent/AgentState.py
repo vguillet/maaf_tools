@@ -2,9 +2,22 @@
 ##################################################################################################################
 
 from dataclasses import dataclass, fields, field
+import pandas as pd
 
-from maaf_tools.datastructures.MaafItem import MaafItem
-from maaf_tools.datastructures.state.State import State
+try:
+    from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.datastructures.MaafList import MaafList
+
+    from maaf_tools.datastructures.state.State import State
+    from maaf_tools.datastructures.agent.Plan import Plan
+
+except:
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
+
+    from maaf_tools.maaf_tools.datastructures.state.State import State
+    from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
+
 
 ##################################################################################################################
 
@@ -63,6 +76,22 @@ class AgentState(State):
         fields_dict = {f.name: getattr(self, f.name) for f in state_fields}
 
         return fields_dict
+
+    def asdf(self) -> pd.DataFrame:
+        """
+        Create a pandas DataFrame from the AgentState data class instance.
+        """
+
+        # -> Get the fields of the AgentState class
+        state_fields = fields(self)
+
+        # -> Create a dictionary with field names as keys and their current values
+        fields_dict = {f.name: getattr(self, f.name) for f in state_fields}
+
+        # -> Create a DataFrame from the dictionary
+        state_df = pd.DataFrame([fields_dict])
+
+        return state_df
 
     # ============================================================== From
     @classmethod

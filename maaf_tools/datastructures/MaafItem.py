@@ -4,6 +4,7 @@
 from dataclasses import dataclass, fields, field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+import pandas as pd
 from abc import ABC, abstractmethod
 
 ##################################################################################################################
@@ -27,6 +28,13 @@ class MaafItem(ABC):
         :return: A dictionary with field names as keys and current values.
         """
         pass
+
+    # @abstractmethod
+    # def asdf(self) -> pd.DataFrame:
+    #     """
+    #     Create a pandas DataFrame from the item data class instance.
+    #     """
+    #     pass
 
     @classmethod
     @abstractmethod
