@@ -10,6 +10,7 @@ try:
     from maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.datastructures.agent.Plan import Plan
     from maaf_tools.datastructures.task.TaskLog import TaskLog
+    from maaf_tools.datastructures.task.Task import Task
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
@@ -18,6 +19,7 @@ except:
     from maaf_tools.maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
     from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
+    from maaf_tools.maaf_tools.datastructures.task.Task import Task
 
 ##################################################################################################################
 
@@ -26,19 +28,19 @@ DEBUG = True
 
 @dataclass
 class Agent(MaafItem):
-    id: str                                 # ID of the agent
-    name: str                               # Name of the agent
-    agent_class: str                        # Class of the agent
-    hierarchy_level: int                    # Hierarchy level of the agent
-    affiliations: List[str]                 # Affiliations of the agent
-    specs: dict                             # Specifications of the agent
-    skillset: List[str]                     # Skillset of the agent
-    state: AgentState                       # State of the agent, state object
+    id: str                                     # ID of the agent
+    name: str                                   # Name of the agent
+    agent_class: str                            # Class of the agent
+    hierarchy_level: int                        # Hierarchy level of the agent
+    affiliations: List[str]                     # Affiliations of the agent
+    specs: dict                                 # Specifications of the agent
+    skillset: List[str]                         # Skillset of the agent
+
+    state: AgentState                           # State of the agent, state object
+    plan: Plan                                  # Plan of the agent, plan object
 
     # shared: NestedDict = field(default_factory=NestedDict)  # Shared data of the agent, gets serialized and passed around
     # local: NestedDict = field(default_factory=NestedDict)   # Local data of the agent, does not get serialized and passed around
-
-    plan: Plan                              # Plan of the agent, plan object
 
     shared: dict = field(default_factory=dict)  # Shared data of the agent, gets serialized and passed around
     local: dict = field(default_factory=dict)   # Local data of the agent, does not get serialized and passed around
@@ -68,17 +70,90 @@ class Agent(MaafItem):
         """
         return affiliation in self.affiliations
 
+    def add_task_to_plan(self,
+                         task_log: TaskLog,
+                         task: Task or str,
+                         logger=None
+                         ) -> (bool, bool):
+        """
+        Add a task to the plan of the agent. The task is added to the task bundle and the path is updated.
+
+        :param task_log: The task log containing the tasks and the paths between them.
+        :param task: The task to be added to the plan.
+        :param logger: The logger to log messages to (optional).
+
+        :return: A tuple containing the success of adding the task to the task bundle and updating the plan.
+        """
+
+        if isinstance(task, Task):
+            task_id = task.id
+        else:
+            task_id = task
+
+        if not self.plan.has_task(task_id):
+            # -> Add the task to the task bundle
+            add_task_success = self.plan.add_task(task=task_id)
+
+            if logger and add_task_success:
+                logger.info(
+                    f"{self.id} + Assigning task {task_id} to self - Pending task count: {len(task_log.ids_pending)})")
+
+        else:
+            add_task_success = True
+
+        # -> Update the plan with the path from the task log
+        update_plan_success = self.update_plan(tasklog=task_log)
+
+        return add_task_success, update_plan_success
+
+    def remove_task_from_plan(self,
+                              task_log: TaskLog,
+                              task: Task or str,
+                              logger=None
+                              ) -> (bool, bool):
+        """
+        Remove a task from the plan of the agent. The task is removed from the task bundle and the path is updated.
+
+        :param task_log: The task log containing the tasks and the paths between them.
+        :param task: The task to be removed from the plan.
+        :param logger: The logger to log messages to (optional).
+
+        :return: A tuple containing the success of removing the task from the task bundle and updating the plan.
+        """
+
+        if isinstance(task, Task):
+            task_id = task.id
+        else:
+            task_id = task
+
+        if self.plan.has_task(task_id):
+            # -> Remove the task from the task bundle
+            remove_task_success = self.plan.remove_task(task=task_id)
+
+            if logger and remove_task_success:
+                logger.info(
+                    f"{self.id} - Dropping task {task_id} from task list - Pending task count: {len(task_log.ids_pending)}")
+
+        else:
+            remove_task_success = True
+
+        # -> Update the plan with the path from the task log
+        update_plan_success = self.update_plan(tasklog=task_log)
+
+        return remove_task_success, update_plan_success
+
     def update_plan(self,
                     tasklog: TaskLog,
                     selection: str = "shortest"     # "shortest", "longest", "random"
-                    ):
+                    ) -> bool:
         """
         Update the plan of the agent with the path obtained from a tasklog.
 
         :param tasklog: The tasklog containing the tasks and the paths between them.
         :param selection: The selection method for the path between tasks.
         """
-        self.plan.update_path(
+
+        return self.plan.update_path(
             tasklog=tasklog,
             selection=selection
         )

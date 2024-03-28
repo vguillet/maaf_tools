@@ -4,6 +4,8 @@
 
 path: {
     "id": str,
+    "source": str,
+    "target": str,
     "path": list[str],
     "requirements": list[str], (ground, air, water, etc.)
 }
@@ -120,6 +122,7 @@ class TaskGraph(MaafItem):
             "random"   : Randomly replace a path with the new path.
             "latest"   : Replace all current paths with the new path.
             "all"      : Keep all paths. Add the new path to the list of paths.
+            !!! If either source or target nodes is agent, default to "latest" selection.
         """
 
         # -> Recursively add paths if path is a list
@@ -137,14 +140,29 @@ class TaskGraph(MaafItem):
         uv_edge = (source_node, target_node)
         uv_path = deepcopy(path)
 
+        # > Add source and target keys
+        uv_path["source"] = source_node
+        uv_path["target"] = target_node
+
         vu_edge = (target_node, source_node)
         vu_path = deepcopy(path)
-        vu_path["path"] = vu_path["path"][::-1] # Reverse path
+
+        # > Reverse path
+        vu_path["path"] = vu_path["path"][::-1]
+
+        # > Add source and target keys
+        vu_path["source"] = target_node
+        vu_path["target"] = source_node
 
         edges = [(uv_edge, uv_path)]
 
+        # -> Add the path in both directions
         if two_way:
             edges += [(vu_edge, vu_path)]
+
+        # -> If either source or target nodes is agent, default to latest selection
+        if source_node == "agent" or target_node == "agent":
+            selection = "latest"
 
         # -> For ever edge...
         for edge_ in edges:
@@ -279,10 +297,9 @@ class TaskGraph(MaafItem):
         :param requirement: The acceptable requirements for the path.
         :param selection: The selection method for the path if multiple meet the requirements. "shortest", "longest", "random", "all"
 
-        :return: The path between the nodes.
+        :return: The path between the nodes for each edge in the sequence ordered similarly to the sequence.
         """
-        sequence_paths_list = []
-        sequence_path_exist = []
+        sequence_paths = []
 
         for i in range(len(node_sequence) - 1):
             paths = self.get_path(
@@ -292,24 +309,17 @@ class TaskGraph(MaafItem):
                 selection=selection
             )
 
-            # -> If paths meeting the requirements exist, add them to the list
-            if paths:
-                sequence_paths_list.append(paths)
-                sequence_path_exist.append(True)
+            # -> Add found paths to the list
+            sequence_paths.append(paths)
 
-            # -> Else, add None
-            else:
-                sequence_paths_list.append(None)
-                sequence_path_exist.append(False)
-
-        return sequence_paths_list, sequence_path_exist
+        return sequence_paths
 
     def get_path(self,
                  source: str,
                  target: str,
                  requirement: Optional[List[str]] = None,
                  selection: str = "shortest"   # "shortest", "longest", "random", "all
-                 ) -> List[dict]:
+                 ) -> List[dict] or dict or None:
         """
         Get a path from the graph. Return all the existing paths between two nodes meeting the requirements.
 
@@ -338,6 +348,9 @@ class TaskGraph(MaafItem):
                     paths.append(path)
             else:
                 paths.append(path)
+
+        if not paths:
+            return None
 
         # -> Filter the paths based on the selection method
         # > Shortest path
@@ -449,6 +462,7 @@ if __name__ == "__main__":
 
     # -> Add path
     graph.add_path("agent", "A", path={"path": ["agent", "A"], "requirements": ["ground"]}, two_way=False)
+    graph.add_path("agent", "A", path={"path": ["agent", "a"], "requirements": ["ground"]}, two_way=False)
     graph.add_path("A", "B", path={"path": ["A", "B"], "requirements": ["air"]}, two_way=False)
     graph.add_path("B", "C", path={"path": ["B", "C"], "requirements": ["ground"]}, two_way=True)
     graph.add_path("C", "A", path={"path": ["C", "A"], "requirements": ["ground"]}, two_way=True)
@@ -479,6 +493,19 @@ if __name__ == "__main__":
     # -> Show plot
     # plt.show()
 
-    print('["A", "B", "C"]:', graph.get_sequence_path(["agent", "A", "B", "C"], requirement=["ground"])[-1])
-    print('["C", "B", "A"]', graph.get_sequence_path(["C", "B", "A"])[-1])
-    print('["A", "C", "B"]', graph.get_sequence_path(["A", "C", "B"])[-1])
+    print('\n["agent", "A", "B", "C"]:')
+
+    for path in graph.get_sequence_path(["agent", "A", "B", "C"], requirement=["ground"]):
+        print("     >", path)
+
+    print("\n['agent', 'C', 'B', 'A']:")
+
+    for path in graph.get_sequence_path(["agent", "C", "B", "A"], requirement=["air"]):
+        print("     >", path)
+
+    print("\n['agent', 'A', 'C', 'B']:")
+
+    for path in graph.get_sequence_path(["agent", "A", "C", "B"], requirement=["ground"]):
+        print("     >", path)
+
+    print("\n")

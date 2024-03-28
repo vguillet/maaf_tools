@@ -1,6 +1,7 @@
 
 ##################################################################################################################
 
+from typing import Optional
 from dataclasses import dataclass, fields, field
 import networkx as nx
 
@@ -19,14 +20,42 @@ except:
 
 @dataclass
 class Plan(MaafItem):
-    task_bundle: list[Task] = field(default_factory=list)  # List of tasks to be executed
-    path: list[str] = field(default_factory=list)         # List of waypoints to be visited
+    recompute: bool = False
+    task_bundle: list[str] = field(default_factory=list)  # Ordered list of task ids to be executed
+    paths: dict[str] = field(default_factory=dict)         # Dict of paths corresponding to each task
 
     def __repr__(self) -> str:
         return f"Plan with {len(self.task_bundle)} tasks and {len(self.path)} waypoints"
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    @property
+    def path(self):
+        """
+        Get the full path of the plan.
+
+        :return: A list of waypoints corresponding to the full path of the plan excluding the starting loc.
+        """
+
+        full_path = []
+        missing_paths = []
+
+        for task_id in self.task_bundle:
+            if task_id not in self.paths.keys():
+                missing_paths.append(task_id)
+
+            elif self.paths[task_id] is None:
+                missing_paths.append(task_id)
+
+            else:
+                full_path += self.paths[task_id]["path"][1:]
+
+        if missing_paths:
+            print(f"!!! Plan path is missing for tasks: {missing_paths} !!!")
+            return missing_paths
+
+        return full_path
 
     def has_task(self, task_id: str) -> bool:
         """
@@ -39,6 +68,67 @@ class Plan(MaafItem):
         Check if the plan has a specific waypoint
         """
         return waypoint_id in self.path
+
+    # ============================================================== Add
+    def add_task(self, task: Task or str, position: Optional[int] = None) -> bool:
+        """
+        Add a task to the plan. The task is added to the end of the task list by default if no position is specified.
+
+        :param task: The task to be added to the plan.
+        :param position: The position at which to add the task.
+
+        :return: True if the task was added successfully, False otherwise.
+        """
+
+        # -> Check if the task is already in the plan
+        if isinstance(task, Task):
+            task_id = task.id
+        else:
+            task_id = task
+
+        if self.has_task(task_id):
+            print(f"!!! Task {task_id} is already in the plan !!!")
+            return False
+
+        # -> Add the task to the plan
+        if position is not None:
+            self.task_bundle.insert(position, task_id)
+        else:
+            self.task_bundle.append(task_id)
+
+        # -> Add key in paths
+        self.paths[task_id] = None
+
+        return True
+
+    # ============================================================== Remove
+    def remove_task(self, task: Task or str) -> bool:
+        """
+        Remove a task from the plan.
+
+        :param task: The task to be removed from the plan.
+
+        :return: True if the task was removed successfully, False otherwise.
+        """
+
+        # -> Check if the task is in the plan
+        if isinstance(task, Task):
+            task_id = task.id
+        else:
+            task_id = task
+
+        if not self.has_task(task_id):
+            print(f"!!! Task {task_id} is not in the plan !!!")
+            return False
+
+        # -> Remove the task from the plan
+        self.task_bundle.remove(task_id)
+        del self.paths[task_id]
+
+        # -> Flag plan as recompute
+        self.recompute = True
+
+        return True
 
     # ============================================================== Get
     def update_path(self,
@@ -53,23 +143,28 @@ class Plan(MaafItem):
         :param selection: The selection method for the path. Options: "shortest", "longest", "random"
         """
 
-        node_bundle = ["agent"] + [task.id for task in self.task_bundle]
+        node_bundle = ["agent"] + [task_id for task_id in self.task_bundle]
 
-        sequence_paths_list, sequence_path_exist = tasklog.get_sequence_path(
-                node_sequence=node_bundle,
-                requirement=None,        # TODO: Fix once agents have requirements
-                selection=selection
-                )
+        sequence_paths = tasklog.get_sequence_path(
+            node_sequence=node_bundle,
+            requirement=None,        # TODO: Fix once agents have requirements
+            selection=selection
+        )
 
         # -> Check if a path exists for each step of the sequence
-        for path in sequence_path_exist:
-            assert path, f"!!! Plan path update failed: No path found for bundle {node_bundle} !!!"
+        complete_path = True
 
-        # -> Check if path exists for every step of the bundle
-        for path in sequence_paths_list:
-            self.path = path["path"][1:]
+        for path in sequence_paths:
+            if not path:
+                complete_path = False
 
-        return True
+        self.paths = {}
+
+        # -> Update local path (store path corresponding to each task)
+        for i, task_id in enumerate(self.task_bundle):
+            self.paths[task_id] = sequence_paths[i]
+
+        return complete_path
 
     # ============================================================== To
     def asdict(self) -> dict:
