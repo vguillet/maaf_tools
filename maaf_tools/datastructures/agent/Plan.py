@@ -20,7 +20,6 @@ except:
 
 @dataclass
 class Plan(MaafItem):
-    recompute: bool = False
     task_bundle: list[str] = field(default_factory=list)  # Ordered list of task ids to be executed
     paths: dict[str] = field(default_factory=dict)         # Dict of paths corresponding to each task
 
@@ -41,6 +40,8 @@ class Plan(MaafItem):
         full_path = []
         missing_paths = []
 
+        first_step = True
+
         for task_id in self.task_bundle:
             if task_id not in self.paths.keys():
                 missing_paths.append(task_id)
@@ -49,7 +50,11 @@ class Plan(MaafItem):
                 missing_paths.append(task_id)
 
             else:
-                full_path += self.paths[task_id]["path"][1:]
+                if first_step:
+                    full_path += self.paths[task_id]["path"]
+                    first_step = False
+                else:
+                    full_path += self.paths[task_id]["path"][1:]
 
         if missing_paths:
             print(f"!!! Plan path is missing for tasks: {missing_paths} !!!")
@@ -124,9 +129,6 @@ class Plan(MaafItem):
         # -> Remove the task from the plan
         self.task_bundle.remove(task_id)
         del self.paths[task_id]
-
-        # -> Flag plan as recompute
-        self.recompute = True
 
         return True
 

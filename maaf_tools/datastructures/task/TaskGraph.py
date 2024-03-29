@@ -406,6 +406,31 @@ class TaskGraph(MaafItem):
         """
         return self.graph.has_edge(u, v)
 
+    # ============================================================== Merge
+    def merge(self, task_graph: "TaskGraph", prioritise_local: bool = False) -> None:
+        """
+        Merge the current TaskGraph with another TaskGraph.
+
+        :param task_graph: The TaskGraph to merge with.
+        :param prioritise_local: Whether to prioritise the local fields when merging (add only).
+        """
+
+        # -> Verify if task_graph is of type TaskGraph
+        if not isinstance(task_graph, TaskGraph):
+            raise ValueError(f"!!! TaskGraph merge failed: TaskGraph is not of type TaskGraph: {type(task_graph)} !!!")
+
+        # -> Check if the graphs is the same as the current graph
+        if task_graph is self:
+            return
+
+        # -> Merge the graphs
+        if prioritise_local:
+            self.graph = nx.compose(task_graph.graph, self.graph)
+        else:
+            self.graph = nx.compose(self.graph, task_graph.graph)
+
+        return
+
     # ============================================================== To
     def asdict(self, include_agent: bool = False) -> dict:
         """

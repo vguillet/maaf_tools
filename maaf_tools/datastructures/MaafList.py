@@ -178,12 +178,6 @@ class MaafList(MaafItem):
         """
         return self.__class__, (self.items,)
 
-    def clone(self) -> "MaafList":
-        """
-        Clone the item log.
-        """
-        return self.from_dict(self.asdict())
-
     # ============================================================== Set
     def update_item_fields(self,
                            item: int or str or item_class,
@@ -248,31 +242,34 @@ class MaafList(MaafItem):
         # -> Call the on_update_item method
         self.call_on_update_item_listeners(item)
 
-    # ============================================================== Merge
-    def merge(self, item_list: "MaafList", prioritise_local: bool = False) -> None:
-        """
-        Merge the items of another item list into the item list.
-
-        :param item_list: The item log to merge into the item log.
-        :param prioritise_local: Whether to prioritise the local field of the item over the shared field.
-        """
-
-        # -> Check if the item log is of the same type
-        if self.item_class != item_list.item_class:
-            raise ValueError(f"!!! Merge item log failed: Merging item list with different item class '{item_list.item_class}' into item list with item class '{self.item_class}' !!!")
-
-        # -> For all items not in item list
-        for item_id in item_list.ids:
-            if item_id not in self.ids:
-                self.add_item(item_list[item_id])
-
-            elif not prioritise_local:
-                local_item = self[item_id]
-                new_item = item_list[item_id]               # > retrieve the new item
-                new_item.local = local_item.local           # > add the local field of the old item to the new item
-
-                self.remove_item(local_item)                # > remove the old item
-                self.add_item(new_item)                     # > add the new item
+    # # ============================================================== Merge
+    # def merge(self, item_list: "MaafList", prioritise_local: bool = False) -> None:
+    #     """
+    #     Merge the items of another item list into the item list.
+    #
+    #     :param item_list: The item log to merge into the item log.
+    #     :param prioritise_local: Whether to prioritise the local field of the item over the shared field.
+    #     """
+    #
+    #     # -> Check if the item log is of the same type
+    #     if self.item_class != item_list.item_class:
+    #         raise ValueError(f"!!! Merge item log failed: Merging item list with different item class '{item_list.item_class}' into item list with item class '{self.item_class}' !!!")
+    #
+    #     # -> For all items not in item list
+    #     for item_id in item_list.ids:
+    #         if item_id not in self.ids:
+    #             self.add_item(item_list[item_id])
+    #
+    #         else:
+    #             self[item_id].merge(item_list[item_id], prioritise_local)
+    #
+    #         elif not prioritise_local:
+    #             local_item = self[item_id]
+    #             new_item = item_list[item_id]               # > retrieve the new item
+    #             new_item.local = local_item.local           # > add the local field of the old item to the new item
+    #
+    #             self.remove_item(local_item)                # > remove the old item
+    #             self.add_item(new_item)                     # > add the new item
 
     # ============================================================== Add
     def add_item(self, item: item_class) -> bool:

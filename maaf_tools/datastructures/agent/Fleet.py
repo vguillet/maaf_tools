@@ -175,12 +175,14 @@ class Fleet(MaafList):
         )
 
     # ============================================================== Merge
-    def merge_fleets(self,
-                     fleet: "Fleet",
-                     add_agent_callback: Optional[callable] = None,
-                     remove_agent_callback: Optional[callable] = None,
-                     fleet_state_change_callback: Optional[callable] = None
-                     ) -> bool:
+    def merge(self,
+              fleet: "Fleet",
+              add_agent_callback: Optional[callable] = None,
+              remove_agent_callback: Optional[callable] = None,
+              fleet_state_change_callback: Optional[callable] = None,
+              prioritise_local: bool = False,
+              *args, **kwargs
+              ) -> bool:
         """
         Merge the fleet with another fleet. The local fleet can be prioritised over the new fleet.
 
@@ -188,15 +190,26 @@ class Fleet(MaafList):
         :param add_agent_callback: A callback function to call when an agent is added to the fleet.
         :param remove_agent_callback: A callback function to call when an agent is removed from the fleet.
         :param fleet_state_change_callback: A callback function to call at the end of the merge if the fleet state has changed.
+        :param prioritise_local: Whether to prioritise the local fleet over the new fleet.
 
         :return: A boolean indicating whether the fleet state has changed.
         """
 
+        # -> If the fleet is None, return False
         if fleet is None:
             return False
 
-        fleet_state_change = False
+        # -> Verify if the fleet is of type Fleet
+        if not isinstance(fleet, Fleet):
+            raise ValueError(f"!!! Fleet merge failed: Fleet is not of type Fleet: {type(fleet)} !!!")
 
+        # -> Check if the fleet is the same as the current fleet
+        if fleet is self:
+            return False
+
+        fleet_state_change = 0
+
+        # ----- Merge agents
         # -> For all agents in the fleet to merge ...
         for agent in fleet:
             # -> If the agent is not in the local fleet ...
@@ -205,39 +218,36 @@ class Fleet(MaafList):
                 if agent.state.status == "active":
                     self.add_agent(agent=agent)             # Add agent to the fleet
 
+                    fleet_state_change += 1                 # Set the fleet state change flag to True
+
                     if add_agent_callback is not None:
                         add_agent_callback(agent=agent)     # Call the add agent callback
-
-                    fleet_state_change = True               # Set the fleet state change flag to True
 
                 # -> If the agent is inactive, only add to the local fleet
                 else:
                     self.add_agent(agent=agent)             # Add agent to the fleet
 
-            # -> Else if the new agent state is more recent than the local agent state, update
-            elif agent.state.timestamp > self[agent.id].state.timestamp:
-                # -> If the agent is active, update the agent state in the fleet to the latest state
-                if agent.state.status == "active":
-                    self.set_agent_state(agent=agent, state=agent.state)
-                    self.set_agent_plan(agent=agent, plan=agent.plan)
+            else:
+                agent_state_change, agent_plan_change, agent_enabled, agent_disabled = self[agent.id].merge(
+                    agent=agent,
+                    prioritise_local=prioritise_local,
+                    *args, **kwargs
+                )
 
-                    fleet_state_change = True
+                if agent_state_change:
+                    fleet_state_change += 1
 
-                # -> If the agent is inactive, update state and remove agent from local states
-                else:
-                    # -> Remove agent from local fleet
-                    self.set_agent_state(agent=agent, state=agent.state)    # Update the agent state
+                if add_agent_callback is not None and agent_enabled:
+                    add_agent_callback(agent=agent)
 
-                    if remove_agent_callback is not None:
-                        remove_agent_callback(agent=agent)                  # Call the remove agent callback
-
-                    fleet_state_change = True                               # Set the fleet state change flag to True
+                elif remove_agent_callback is not None and agent_disabled:
+                    remove_agent_callback(agent=agent)
 
         # -> Call the fleet state change callback if the fleet state has changed
-        if fleet_state_change_callback is not None and fleet_state_change:
+        if fleet_state_change_callback is not None and fleet_state_change > 0:
             fleet_state_change_callback()
 
-        return fleet_state_change
+        return fleet_state_change > 0
 
     # ============================================================== Add
     def add_agent(self, agent: dict or Agent or List[dict or Agent]) -> None:

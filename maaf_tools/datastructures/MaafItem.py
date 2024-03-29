@@ -20,6 +20,24 @@ class MaafItem(ABC):
         """
         return self.__class__, (*self.asdict(),)  # -> Pass dictionary representation to constructor
 
+    # ============================================================== Get
+    def clone(self):
+        """
+        Clone the item.
+        """
+        return self.from_dict(self.asdict())
+
+    # ============================================================== Set
+
+    # ============================================================== Merge
+    # @abstractmethod
+    # def merge(self, item, prioritise_local: bool = False):
+    #     """
+    #     Merge the item with another item.
+    #     """
+    #     pass
+
+    # ============================================================== To
     @abstractmethod
     def asdict(self) -> dict:
         """
@@ -36,6 +54,7 @@ class MaafItem(ABC):
     #     """
     #     pass
 
+    # ============================================================== From
     @classmethod
     @abstractmethod
     def from_dict(cls, item_dict: dict, partial: bool):

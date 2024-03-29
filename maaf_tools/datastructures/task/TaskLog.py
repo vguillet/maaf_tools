@@ -254,28 +254,41 @@ class TaskLog(MaafList):
         )
 
     # ============================================================== Merge
-    def merge_tasklogs(self,
-                       tasklog: "TaskLog",
-                       add_task_callback: Optional[callable] = None,
-                       terminate_task_callback: Optional[callable] = None,
-                       task_state_change_callback: Optional[callable] = None
-                       ) -> bool:
+    def merge(self,
+              tasklog: "TaskLog",
+              add_task_callback: Optional[callable] = None,
+              terminate_task_callback: Optional[callable] = None,
+              tasklog_state_change_callback: Optional[callable] = None,
+              prioritise_local: bool = False,
+              *args, **kwargs
+              ) -> bool:
         """
         Merge the tasks from another task log into this task log. If a task with the same id exists in both task logs,
 
         :param tasklog: The task log to merge with this task log.
         :param add_task_callback: A callback function to call when a task is added to the task log.
         :param terminate_task_callback: A callback function to call when a task is terminated in the task log.
-        :param task_state_change_callback: A callback function to call at the end of the merge if the task log state has changed.
+        :param tasklog_state_change_callback: A callback function to call at the end of the merge if the task log state has changed.
+        :param prioritise_local: Whether to prioritise the local fields when merging (add only).
 
         :return: A boolean indicating whether the tasklog state has changed
         """
 
+        # -> If the task log is None, return False
         if tasklog is None:
             return False
 
-        task_state_change = False
+        # -> Verify if tasklog is of type TaskLog
+        if not isinstance(tasklog, TaskLog):
+            raise ValueError(f"!!! Task log merge failed: Task log is not of type TaskLog: {type(tasklog)} !!!")
 
+        # -> Check if the task log is the same as the current task log
+        if tasklog is self:
+            return False
+
+        tasklog_state_change = 0
+
+        # ----- Merge tasks
         # -> For all tasks in the task log to merge ...
         for task in tasklog:
             # -> If the task is not in the task log ...
@@ -284,47 +297,40 @@ class TaskLog(MaafList):
                 if task.status == "pending":
                     self.add_task(task=task)
 
-                    if add_task_callback:
-                        add_task_callback(task=task)
+                    tasklog_state_change += 1
 
-                    task_state_change = True
+                    if add_task_callback is not None:
+                        add_task_callback(task=task)
 
                 # -> If the task is completed, only add to the task log (do not recompute bids)
                 else:
                     self.add_task(task=task)
 
-            # -> Else if the task is in the task log and is not pending, flag as terminated in task log and remove rows from the local states
-            elif task.status != "pending" and self[task.id].status == "pending":
-                if task.status == "completed":
-                    self.flag_task_completed(
-                        task=task,
-                        termination_source_id=task.termination_source_id,
-                        termination_timestamp=task.termination_timestamp
-                    )
+            # -> Else, merge the task with the task in the task log
+            else:
+                task_state_change, task_terminated = self[task.id].merge(
+                    task=task,
+                    prioritise_local=prioritise_local
+                    *args, **kwargs
+                )
 
-                elif task.status == "cancelled":
-                    self.flag_task_cancelled(
-                        task=task,
-                        termination_source_id=task.termination_source_id,
-                        termination_timestamp=task.termination_timestamp
-                    )
+                if task_state_change:
+                    tasklog_state_change += 1
 
-                else:
-                    raise ValueError(f"Task status {task.status} not recognised")
-
-                if terminate_task_callback:
+                if terminate_task_callback is not None and task_terminated:
                     terminate_task_callback(task=task)
 
-                task_state_change = True
-
-            else:
-                pass
+        # ----- Merge task graph
+        self.task_graph.merge(
+            task_graph=tasklog.task_graph,
+            prioritise_local=prioritise_local
+        )
 
         # -> Call the task state change callback if the task state has changed
-        if task_state_change_callback is not None and task_state_change:
-            task_state_change_callback()
+        if tasklog_state_change_callback is not None and tasklog_state_change > 0:
+            tasklog_state_change_callback()
 
-        return task_state_change
+        return tasklog_state_change > 0
 
     # ============================================================== Add
     def add_task(self, task: dict or item_class or List[dict or item_class]) -> None:
@@ -407,7 +413,7 @@ if __name__ == "__main__":
     from pprint import pprint
 
     # -> Create task log
-    task_log = TaskLog()
+    tasklog = TaskLog()
 
     # -> Create tasks
     task1 = Task(
@@ -441,15 +447,15 @@ if __name__ == "__main__":
     )
 
     # -> Add tasks to task log
-    task_log.add_task([task1, task2, task3])
+    tasklog.add_task([task1, task2, task3])
 
     # -> Print task log
-    print(task_log)
+    print(tasklog)
 
-    print(task_log.task_graph)
+    print(tasklog.task_graph)
 
     # -> Add path between tasks
-    task_log.task_graph.add_path(
+    tasklog.task_graph.add_path(
         source_node=task1.id,
         target_node=task2.id,
         path={
@@ -459,7 +465,7 @@ if __name__ == "__main__":
         }
     )
 
-    task_log.task_graph.add_path(
+    tasklog.task_graph.add_path(
         source_node=task2.id,
         target_node=task3.id,
         path={
@@ -469,7 +475,7 @@ if __name__ == "__main__":
         }
     )
 
-    task_log.task_graph.add_path(
+    tasklog.task_graph.add_path(
         source_node=task1.id,
         target_node=task3.id,
         path={
@@ -480,7 +486,7 @@ if __name__ == "__main__":
     )
 
     # -> Serialise task log
-    task_log_serialised = task_log.asdict()
+    task_log_serialised = tasklog.asdict()
 
     pprint(task_log_serialised)
 
@@ -491,4 +497,4 @@ if __name__ == "__main__":
 
     print(task_log_deserialised.task_graph)
 
-    print(task_log.asdf().to_string())
+    print(tasklog.asdf().to_string())
