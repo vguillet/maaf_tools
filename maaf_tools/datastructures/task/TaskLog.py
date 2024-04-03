@@ -173,6 +173,31 @@ class TaskLog(MaafList):
             selection=selection
         )
 
+    def get_path(self,
+                 source: str,
+                 target: str,
+                 requirement: Optional[List[str]] = None,
+                 selection: str = "shortest"   # "shortest", "longest", "random", "all
+                 ) -> List[dict] or dict or None:
+        """
+        Get a path from the graph. Return all the existing paths between two nodes meeting the requirements.
+
+        :param source: The source node of the path.
+        :param target: The target node of the path.
+        :param requirement: The acceptable requirements for the path.
+        :param selection: The selection method for the path if multiple meet the requirements. "shortest", "longest", "random", "all"
+
+        :return: The path(s) between the nodes.
+        """
+
+        return self.task_graph.get_path(
+            source=source,
+            target=target,
+            requirement=requirement,
+            selection=selection
+        )
+
+
     # ============================================================== Set
     def set_task_status(self,
                         task: int or str or item_class or List[int or str or item_class],
@@ -486,15 +511,15 @@ if __name__ == "__main__":
     )
 
     # -> Serialise task log
-    task_log_serialised = tasklog.asdict()
+    tasklog_serialised = tasklog.asdict()
 
-    pprint(task_log_serialised)
+    pprint(tasklog_serialised)
 
     # -> Deserialise task log
-    task_log_deserialised = TaskLog.from_dict(task_log_serialised)
+    tasklog_deserialised = TaskLog.from_dict(tasklog_serialised)
 
-    print(task_log_deserialised)
+    print(tasklog_deserialised)
 
-    print(task_log_deserialised.task_graph)
+    print(tasklog_deserialised.task_graph)
 
     print(tasklog.asdf().to_string())

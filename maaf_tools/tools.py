@@ -99,3 +99,25 @@ def timestamp_to_ros_time(timestamp: float) -> Time:
 
     # Create a Time object from seconds and nanoseconds
     return Time(seconds=seconds, nanoseconds=nanoseconds)
+
+
+def consistent_random(string: str, min_value: float, max_value: float) -> float:
+    """
+    Consistently generate a random number between min and max based on the input string.
+
+    :param string: The input string to generate the random number.
+    :param min_value: The minimum value of the random number.
+    :param max_value: The maximum value of the random number.
+    """
+    # -> Use hash() function to hash the input string
+    hash_value = hash(string)
+    # -> Normalize hash value to be between min and max
+    random_value = min_value + (hash_value % 1000000) / 1000000 * (max_value - min_value)
+
+    return random_value
+
+
+if __name__ == "__main__":
+    # -> Test the consistent_random function
+    print(consistent_random("test", 0.0000000000001, 0.000000001))
+    print(consistent_random("test", 0.0000000000001, 0.000000001))

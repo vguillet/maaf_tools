@@ -24,7 +24,15 @@ class Plan(MaafItem):
     paths: dict[str] = field(default_factory=dict)         # Dict of paths corresponding to each task
 
     def __repr__(self) -> str:
-        return f"Plan with {len(self.task_bundle)} tasks and {len(self.path)} waypoints"
+        plan_str = f"{len(self.task_bundle)} tasks: "
+
+        for task in self.task_bundle:
+            plan_str += f"{task} -> "
+
+        if len(self.task_bundle) > 0:
+            return plan_str[:-4]
+        else:
+            return "Empty plan"
 
     def __str__(self) -> str:
         return self.__repr__()

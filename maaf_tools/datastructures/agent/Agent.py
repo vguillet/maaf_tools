@@ -126,6 +126,8 @@ class Agent(MaafItem):
             if logger and add_task_success:
                 logger.info(
                     f"{self.id} + Assigning task {task_id} to self - Pending task count: {len(tasklog.ids_pending)})")
+            elif logger and not add_task_success:
+                logger.info(f"!!! Task {task_id} could not be added to the plan of {self.id} !!!")
 
         else:
             add_task_success = True
@@ -162,6 +164,8 @@ class Agent(MaafItem):
             if logger and remove_task_success:
                 logger.info(
                     f"{self.id} - Dropping task {task_id} from task list - Pending task count: {len(tasklog.ids_pending)}")
+            elif logger and not remove_task_success:
+                logger.warning(f"{self.id} - Task {task_id} not in task list")
 
         else:
             remove_task_success = True
