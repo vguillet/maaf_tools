@@ -102,6 +102,7 @@ class Agent(MaafItem):
     def add_task_to_plan(self,
                          tasklog: TaskLog,
                          task: Task or str,
+                         position: Optional[int] = None,
                          logger=None
                          ) -> (bool, bool):
         """
@@ -109,6 +110,7 @@ class Agent(MaafItem):
 
         :param tasklog: The task log containing the tasks and the paths between them.
         :param task: The task to be added to the plan.
+        :param position: The position in the plan sequence at which to add the task. Add to the end of the plan if None.
         :param logger: The logger to log messages to (optional).
 
         :return: A tuple containing the success of adding the task to the task bundle and updating the plan.
@@ -121,7 +123,10 @@ class Agent(MaafItem):
 
         if not self.plan.has_task(task_id):
             # -> Add the task to the task bundle
-            add_task_success = self.plan.add_task(task=task_id)
+            add_task_success = self.plan.add_task(
+                task=task_id,
+                position=position
+            )
 
             if logger and add_task_success:
                 logger.info(
@@ -132,14 +137,15 @@ class Agent(MaafItem):
         else:
             add_task_success = True
 
-        # -> Update the plan with the path from the task log
-        update_plan_success = self.update_plan(tasklog=tasklog)
+        # # -> Update the plan with the path from the task log
+        # update_plan_success = self.update_plan(tasklog=tasklog)
 
-        return add_task_success, update_plan_success
+        return add_task_success
 
     def remove_task_from_plan(self,
                               tasklog: TaskLog,
                               task: Task or str,
+                              forward: bool = False,
                               logger=None
                               ) -> (bool, bool):
         """
@@ -147,6 +153,7 @@ class Agent(MaafItem):
 
         :param tasklog: The task log containing the tasks and the paths between them.
         :param task: The task to be removed from the plan.
+        :param forward: Whether to remove the tasks after the specified task.
         :param logger: The logger to log messages to (optional).
 
         :return: A tuple containing the success of removing the task from the task bundle and updating the plan.
@@ -159,7 +166,10 @@ class Agent(MaafItem):
 
         if self.plan.has_task(task_id):
             # -> Remove the task from the task bundle
-            remove_task_success = self.plan.remove_task(task=task_id)
+            remove_task_success = self.plan.remove_task(
+                task=task_id,
+                forward=forward
+            )
 
             if logger and remove_task_success:
                 logger.info(
@@ -170,26 +180,26 @@ class Agent(MaafItem):
         else:
             remove_task_success = True
 
-        # -> Update the plan with the path from the task log
-        update_plan_success = self.update_plan(tasklog=tasklog)
+        # # -> Update the plan with the path from the task log
+        # update_plan_success = self.update_plan(tasklog=tasklog)
 
-        return remove_task_success, update_plan_success
+        return remove_task_success
 
-    def update_plan(self,
-                    tasklog: TaskLog,
-                    selection: str = "shortest"     # "shortest", "longest", "random"
-                    ) -> bool:
-        """
-        Update the plan of the agent with the path obtained from a tasklog.
-
-        :param tasklog: The tasklog containing the tasks and the paths between them.
-        :param selection: The selection method for the path between tasks.
-        """
-
-        return self.plan.update_path(
-            tasklog=tasklog,
-            selection=selection
-        )
+    # def update_plan(self,
+    #                 tasklog: TaskLog,
+    #                 selection: str = "shortest"     # "shortest", "longest", "random"
+    #                 ) -> bool:
+    #     """
+    #     Update the plan of the agent with the path obtained from a tasklog.
+    #
+    #     :param tasklog: The tasklog containing the tasks and the paths between them.
+    #     :param selection: The selection method for the path between tasks.
+    #     """
+    #
+    #     return self.plan.update_path(
+    #         tasklog=tasklog,
+    #         selection=selection
+    #     )
     # ============================================================== Get
 
     # ============================================================== Set

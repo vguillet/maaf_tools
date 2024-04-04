@@ -19,6 +19,7 @@ from copy import deepcopy
 from random import choice
 
 # Libs
+import matplotlib.pyplot as plt
 import networkx as nx
 from networkx import MultiGraph, Graph, DiGraph
 
@@ -44,14 +45,19 @@ class Path(dict):
 @dataclass
 class TaskGraph(MaafItem):
     graph: DiGraph = field(default_factory=DiGraph)
-
-    def add_agent(self, **kwargs):
-        # -> Add agent node
-        if "agent" not in self.graph.nodes:
-            self.add_node(node_for_adding="agent", **kwargs)
+    main_agent_id: str = None
 
     def __str__(self):
-        return self.graph.__str__()
+        string = self.graph.__str__()
+
+        # > Count paths
+        path_count = 0
+        for edge in self.graph.edges:
+            path_count += len(self.graph[edge[0]][edge[1]]["path"])
+
+        string += f" ({path_count} paths)"
+
+        return string
 
     def __repr__(self):
         return self.graph.__repr__()
@@ -59,8 +65,31 @@ class TaskGraph(MaafItem):
     def __getitem__(self, item):
         return self.graph[item]
 
+    def set_main_agent_node(self, agent_id: str):
+        """
+        Add a main agent node to the graph.
+        """
+
+        # -> If main agent id already set, remove the node
+        if self.main_agent_id:
+            self.graph.remove_node(self.main_agent_id)
+
+        # -> Set the main agent id
+        self.main_agent_id = agent_id
+
+        # > Add the main agent node
+        self.graph.add_node(agent_id, node_type="Agent")
+
+    @property
+    def nodes(self):
+        return self.graph.nodes
+
+    @property
+    def edges(self):
+        return self.graph.edges
+
     # ============================================================== Add
-    def add_node(self, node_for_adding: str, **kwargs):
+    def add_node(self, node_for_adding: str, node_type: str = "Task", **kwargs):
         """
         Add a node to the graph. Wrapper methods to ensure that the consequent edges are added with the correct properties.
 
@@ -68,7 +97,7 @@ class TaskGraph(MaafItem):
         :param path: The path to the node.
         """
 
-        self.graph.add_node(node_for_adding, **kwargs)
+        self.graph.add_node(node_for_adding, node_type=node_type, **kwargs)
 
         # > Add edge new task and all existing tasks
         for existing_task in self.graph.nodes:
@@ -285,7 +314,7 @@ class TaskGraph(MaafItem):
         """
         return self.from_dict(self.asdict())
 
-    def get_sequence_path(self,
+    def get_sequence_paths(self,
                           node_sequence: List[str],
                           requirement: Optional[List[str]] = None,
                           selection: str = "shortest"   # "shortest", "longest", "random", "all"
@@ -406,9 +435,39 @@ class TaskGraph(MaafItem):
         """
         return self.graph.has_edge(u, v)
 
+    # ============================================================== Visualise
+    def draw(self, **kwargs):
+        """
+        Draw the graph.
+        """
+        # Filter edges based on path property
+        edges_to_draw = [(u, v) for u, v in self.graph.edges() if self.graph[u][v]['path']]
+
+        # Create a circular layout
+        pos = nx.circular_layout(self.graph)
+
+        # Draw the filtered edges
+        nx.draw_networkx_edges(self.graph, pos, edgelist=edges_to_draw)
+
+        # Draw the nodes
+        nx.draw_networkx_nodes(self.graph, pos)
+
+        # Draw labels if needed
+        # nx.draw_networkx_labels(self.graph, pos)
+
+        # Show the plot
+        plt.axis('off')
+        plt.show()
+
+        # # -> Draw nodes
+        # nx.draw_networkx_nodes(self.graph)
+        # # nx.draw_circular(self.graph, **kwargs)
+        # plt.show()
+
     # ============================================================== Merge
     def merge(self, task_graph: "TaskGraph", prioritise_local: bool = False) -> None:
         """
+        # TODO: Refactor to specify how to prioritise paths in merge
         Merge the current TaskGraph with another TaskGraph.
 
         :param task_graph: The TaskGraph to merge with.
@@ -432,26 +491,23 @@ class TaskGraph(MaafItem):
         return
 
     # ============================================================== To
-    def asdict(self, include_agent: bool = False) -> dict:
+    def asdict(self) -> dict:
         """
         Create a dictionary containing the fields of the Task data class instance with their current values.
 
         :return: A dictionary with field names as keys and current values.
         """
 
-        if include_agent or "agent" not in self.graph.nodes:
-            task_graph = self.graph
+        graph_copy = deepcopy(self.graph)
 
-        else:
-            # -> Create graph clone
-            task_graph = deepcopy(self.graph)
-
-            # -> Remove agent node
-            task_graph.remove_node("agent")
+        # -> Remove all agent nodes which are not the main agent
+        for node in self.nodes:
+            if self.nodes[node]["node_type"] == "Agent" and node != self.main_agent_id:
+                graph_copy.remove_node(node)
 
         # -> Return the dictionary representation of the graph
         return {
-            "graph": nx.node_link_data(task_graph),
+            "graph": nx.node_link_data(graph_copy),
         }
 
     # ============================================================== From
@@ -478,7 +534,6 @@ if __name__ == "__main__":
 
     # -> Create a graph
     graph = TaskGraph()
-    graph.add_agent(pos=(0, 0))
 
     # -> Add nodes
     graph.add_node("A", pos=(1, 0))
@@ -486,11 +541,11 @@ if __name__ == "__main__":
     graph.add_node("C", pos=(1, 1))
 
     # -> Add path
-    graph.add_path("agent", "A", path={"path": ["agent", "A"], "requirements": ["ground"]}, two_way=False)
-    graph.add_path("agent", "A", path={"path": ["agent", "a"], "requirements": ["ground"]}, two_way=False)
-    graph.add_path("A", "B", path={"path": ["A", "B"], "requirements": ["air"]}, two_way=False)
-    graph.add_path("B", "C", path={"path": ["B", "C"], "requirements": ["ground"]}, two_way=True)
-    graph.add_path("C", "A", path={"path": ["C", "A"], "requirements": ["ground"]}, two_way=True)
+    # graph.add_path("agent", "A", path={"id": "gse", "path": ["agent", "A"], "requirements": ["ground"]}, two_way=False)
+    # graph.add_path("agent", "A", path={"id": "srtghg", "path": ["agent", "a"], "requirements": ["ground"]}, two_way=False)
+    graph.add_path("A", "B", path={"id": "szt", "path": ["A", "B"], "requirements": ["air"]}, two_way=False)
+    # graph.add_path("B", "C", path={"id": "tduyj", "path": ["B", "C"], "requirements": ["ground"]}, two_way=True)
+    # graph.add_path("C", "A", path={"id": "fghn", "path": ["C", "A"], "requirements": ["ground"]}, two_way=True)
 
     # -> Get dictionary representation
     graph_dict = graph.asdict()
@@ -518,19 +573,29 @@ if __name__ == "__main__":
     # -> Show plot
     # plt.show()
 
-    print('\n["agent", "A", "B", "C"]:')
-
-    for path in graph.get_sequence_path(["agent", "A", "B", "C"], requirement=["ground"]):
-        print("     >", path)
-
-    print("\n['agent', 'C', 'B', 'A']:")
-
-    for path in graph.get_sequence_path(["agent", "C", "B", "A"], requirement=["air"]):
-        print("     >", path)
-
-    print("\n['agent', 'A', 'C', 'B']:")
-
-    for path in graph.get_sequence_path(["agent", "A", "C", "B"], requirement=["ground"]):
-        print("     >", path)
+    # print('\n["agent", "A", "B", "C"]:')
+    #
+    # for path in graph.get_sequence_paths(["agent", "A", "B", "C"], requirement=["ground"]):
+    #     print("     >", path)
+    #
+    # print("\n['agent', 'C', 'B', 'A']:")
+    #
+    # for path in graph.get_sequence_paths(["agent", "C", "B", "A"], requirement=["air"]):
+    #     print("     >", path)
+    #
+    # print("\n['agent', 'A', 'C', 'B']:")
+    #
+    # for path in graph.get_sequence_paths(["agent", "A", "C", "B"], requirement=["ground"]):
+    #     print("     >", path)
 
     print("\n")
+
+    print(graph)
+    print(graph.asdict())
+    # print(graph.clone())
+
+    print(graph.nodes)
+
+    # Print nodes with property node type
+    for node in graph.nodes:
+        print(f"{node}: {graph.nodes[node]}")

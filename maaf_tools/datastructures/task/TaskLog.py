@@ -35,13 +35,13 @@ class TaskLog(MaafList):
     item_class = Task
     __on_status_change_listeners: list[callable] = field(default_factory=list)
 
-    def init_tasklog(self):
+    def init_tasklog(self, agent_id: str):
         """
         Initialise the task log. Must be called after the task log has been created.
         """
 
         # -> Add agent to task graph
-        self.task_graph.add_agent()
+        self.task_graph.set_main_agent_node(agent_id=agent_id)
 
     def __repr__(self):
         return f"Task log: {len(self.items)} tasks ({len(self.tasks_completed)} completed, {len(self.tasks_pending)} pending, {len(self.tasks_cancelled)} cancelled)"
@@ -152,7 +152,7 @@ class TaskLog(MaafList):
 
         return filtered_tasks
 
-    def get_sequence_path(self,
+    def get_sequence_paths(self,
                           node_sequence: List[str],
                           requirement: Optional[List[str]] = None,
                           selection: str = "shortest"   # "shortest", "longest", "random", "all"
@@ -167,7 +167,7 @@ class TaskLog(MaafList):
         :return: The path between the nodes.
         """
 
-        return self.task_graph.get_sequence_path(
+        return self.task_graph.get_sequence_paths(
             node_sequence=node_sequence,
             requirement=requirement,
             selection=selection
@@ -348,7 +348,7 @@ class TaskLog(MaafList):
         # ----- Merge task graph
         self.task_graph.merge(
             task_graph=tasklog.task_graph,
-            prioritise_local=prioritise_local
+            prioritise_local=False   # TODO: Refactor to specify how to prioritise paths in merge
         )
 
         # -> Call the task state change callback if the task state has changed
@@ -378,7 +378,10 @@ class TaskLog(MaafList):
 
         if success:
             # -> Add node in task graph
-            self.task_graph.add_node(task.id)
+            self.task_graph.add_node(
+                node_for_adding=task.id,
+                node_type="Task"
+            )
 
     def add_path(self,
                  source_node: str,
@@ -490,7 +493,7 @@ if __name__ == "__main__":
         }
     )
 
-    tasklog.task_graph.add_path(
+    tasklog.add_path(
         source_node=task2.id,
         target_node=task3.id,
         path={
@@ -500,7 +503,7 @@ if __name__ == "__main__":
         }
     )
 
-    tasklog.task_graph.add_path(
+    tasklog.add_path(
         source_node=task1.id,
         target_node=task3.id,
         path={
@@ -523,3 +526,9 @@ if __name__ == "__main__":
     print(tasklog_deserialised.task_graph)
 
     print(tasklog.asdf().to_string())
+
+    new_tasklog = tasklog.clone()
+
+    print(new_tasklog.task_graph)
+
+    print(new_tasklog.asdict())
