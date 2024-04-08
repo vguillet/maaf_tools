@@ -7,7 +7,7 @@ from json import loads, dumps
 from rclpy.time import Time
 
 
-def graph_to_json(graph, pos) -> str:
+def graph_to_json(graph, pos) -> dict:
     """
     Convert the graph and the positions to a JSON string.
 

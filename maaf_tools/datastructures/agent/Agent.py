@@ -35,9 +35,9 @@ class Agent(MaafItem):
 
     # ----- Variable
     hierarchy_level: int                        # Hierarchy level of the agent
-    affiliations: List[str]                     # Affiliations of the agent
+    affiliations: list[str]                     # Affiliations of the agent
     specs: dict                                 # Specifications of the agent
-    skillset: List[str]                         # Skillset of the agent
+    skillset: list[str]                         # Skillset of the agent
 
     state: AgentState                           # State of the agent, state object
     plan: Plan                                  # Plan of the agent, plan object

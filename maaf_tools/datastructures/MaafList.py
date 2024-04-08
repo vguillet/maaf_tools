@@ -33,6 +33,54 @@ class MaafList(MaafItem):
     def __str__(self):
         return self.__repr__()
 
+    def __contains__(self, item: str or item_class) -> bool:
+        """
+        Check if an item exists in the item log.
+
+        :param item: The item to check for. Can be either an item object or an item id.
+        """
+
+        if isinstance(item, str):
+            return item in self.ids
+        else:
+            return item in self.items
+
+    def __len__(self) -> int:
+        """
+        Retrieve number of items in list
+        """
+        return len(self.items)
+
+    def __iter__(self) -> iter:
+        """
+        Retrieve an iterator for the item log.
+        """
+        # -> Sort items list by id
+        self.sort(key=lambda x: x.id)
+
+        return iter(self.items)
+
+    def __getitem__(self, item_id: int or str) -> Optional[item_class]:
+        """
+        Retrieve an item from the item list by its id as index.
+        """
+        # -> Find the item with the given ID
+        for item in self.items:
+            # > If the item exists, return it
+            if item.id == item_id:
+                return item
+
+        # > If the item does not exist, warn the user and return None
+        if DEBUG: print(
+            f"!!! Get item by index failed: {self.item_class} with id '{item_id}' does not exist in the item log !!!")
+        return None
+
+    def __reduce__(self):
+        """
+        Reduce the item log
+        """
+        return self.__class__, (self.items,)
+
     # ============================================================== Properties
     # ------------------------------ IDs
     @property
@@ -142,41 +190,6 @@ class MaafList(MaafItem):
         self.items.sort(key=key, reverse=reverse)
 
     # ============================================================== Get
-    def __len__(self) -> int:
-        """
-        Retrieve number of items in list
-        """
-        return len(self.items)
-
-    def __iter__(self) -> iter:
-        """
-        Retrieve an iterator for the item log.
-        """
-        # -> Sort items list by id
-        self.sort(key=lambda x: x.id)
-
-        return iter(self.items)
-
-    def __getitem__(self, item_id: int or str) -> Optional[item_class]:
-        """
-        Retrieve an item from the item log by its id as index.
-        """
-        # -> Find the item with the given ID
-        for item in self.items:
-            # > If the item exists, return it
-            if item.id == item_id:
-                return item
-
-        # > If the item does not exist, warn the user and return None
-        if DEBUG: print(
-            f"!!! Get item by index failed: {self.item_class} with id '{item_id}' does not exist in the item log !!!")
-        return None
-
-    def __reduce__(self):
-        """
-        Reduce the item log
-        """
-        return self.__class__, (self.items,)
 
     # ============================================================== Set
     def update_item_fields(self,
@@ -431,7 +444,7 @@ class MaafList(MaafItem):
 
     # ============================================================== From
     @classmethod
-    def from_dict(cls, maaflist_dict: dict, partial=False) -> None:
+    def from_dict(cls, maaflist_dict: dict, partial=False) -> "MaafList":
         """
         Construct a maaflist from a dictionary.
 

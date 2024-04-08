@@ -3,7 +3,7 @@
 
 # Built-in/Generic Imports
 from dataclasses import dataclass, fields, field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 # Libs
@@ -32,11 +32,11 @@ class Task(MaafItem):
     id: str
     type: str
     creator: str
-    instructions: dict[str]     # [(skill_ref, task_details_for skill), ...]
+    instructions: dict[str: str]     # [(skill_ref, task_details_for skill), ...]
 
     # ----- Variable
     # > Task data
-    affiliations: List[str]
+    affiliations: list[str]
     priority: int
 
     # > Task status

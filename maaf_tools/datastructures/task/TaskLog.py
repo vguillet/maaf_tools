@@ -153,10 +153,10 @@ class TaskLog(MaafList):
         return filtered_tasks
 
     def get_sequence_paths(self,
-                          node_sequence: List[str],
-                          requirement: Optional[List[str]] = None,
-                          selection: str = "shortest"   # "shortest", "longest", "random", "all"
-                          ) -> (List[dict], List):
+                           node_sequence: List[str],
+                           requirement: Optional[List[str]] = None,
+                           selection: str = "shortest"   # "shortest", "longest", "random", "all"
+                           ) -> (list[dict], list):
         """
         Get a path from the graph.
 
@@ -196,7 +196,6 @@ class TaskLog(MaafList):
             requirement=requirement,
             selection=selection
         )
-
 
     # ============================================================== Set
     def set_task_status(self,
@@ -440,9 +439,6 @@ class TaskLog(MaafList):
 if __name__ == "__main__":
     from pprint import pprint
 
-    # -> Create task log
-    tasklog = TaskLog()
-
     # -> Create tasks
     task1 = Task(
         id="task_1",
@@ -473,6 +469,9 @@ if __name__ == "__main__":
         instructions={"skill_2": "instruction_2"},
         creation_timestamp=1
     )
+
+    # -> Create task log
+    tasklog = TaskLog()
 
     # -> Add tasks to task log
     tasklog.add_task([task1, task2, task3])

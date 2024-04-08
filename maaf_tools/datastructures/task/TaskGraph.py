@@ -151,7 +151,7 @@ class TaskGraph(MaafItem):
             "random"   : Randomly replace a path with the new path.
             "latest"   : Replace all current paths with the new path.
             "all"      : Keep all paths. Add the new path to the list of paths.
-            !!! If either source or target nodes is agent, default to "latest" selection.
+            !!! If either source or target nodes is type Agent, default to "latest" selection.
         """
 
         # -> Recursively add paths if path is a list
@@ -173,30 +173,30 @@ class TaskGraph(MaafItem):
         uv_path["source"] = source_node
         uv_path["target"] = target_node
 
-        vu_edge = (target_node, source_node)
-        vu_path = deepcopy(path)
-
-        # > Reverse path
-        vu_path["path"] = vu_path["path"][::-1]
-
-        # > Add source and target keys
-        vu_path["source"] = target_node
-        vu_path["target"] = source_node
-
         edges = [(uv_edge, uv_path)]
 
         # -> Add the path in both directions
         if two_way:
+            vu_edge = (target_node, source_node)
+            vu_path = deepcopy(path)
+
+            # > Reverse path
+            vu_path["path"] = vu_path["path"][::-1]
+
+            # > Add source and target keys
+            vu_path["source"] = target_node
+            vu_path["target"] = source_node
+
             edges += [(vu_edge, vu_path)]
 
         # -> If either source or target nodes is agent, default to latest selection
-        if source_node == "agent" or target_node == "agent":
+        if self.nodes[source_node]["node_type"] == "Agent" or self.nodes[target_node]["node_type"] == "Agent":
             selection = "latest"
 
-        # -> For ever edge...
-        for edge_ in edges:
-            edge = edge_[0]
-            path = edge_[1]
+        # -> For every edge...
+        for edge, path in edges:
+            # edge = edge_[0]
+            # path = edge_[1]
 
             # -> List paths with the same requirements
             comparable_paths = [
@@ -315,10 +315,10 @@ class TaskGraph(MaafItem):
         return self.from_dict(self.asdict())
 
     def get_sequence_paths(self,
-                          node_sequence: List[str],
-                          requirement: Optional[List[str]] = None,
-                          selection: str = "shortest"   # "shortest", "longest", "random", "all"
-                          ) -> (List[dict], List):
+                           node_sequence: List[str],
+                           requirement: Optional[List[str]] = None,
+                           selection: str = "shortest"   # "shortest", "longest", "random", "all"
+                           ) -> (list[dict], list):
         """
         Get a path from the graph.
 
@@ -357,8 +357,16 @@ class TaskGraph(MaafItem):
         :param requirement: The acceptable requirements for the path.
         :param selection: The selection method for the path if multiple meet the requirements. "shortest", "longest", "random", "all"
 
-        :return: The path(s) between the nodes.
+        :return: The path(s) between the nodes. If no path is found, return None.
         """
+
+        # -> Verify if the source and target nodes exist
+        if not self.has_node(source) or not self.has_node(target):
+            if not self.has_node(source):
+                print(f"!!! TaskGraph get_path failed: Source node does not exist: {source} !!!")
+            else:
+                print(f"!!! TaskGraph get_path failed: Target node does not exist: {target} !!!")
+            return None
 
         paths = []
 
@@ -379,6 +387,7 @@ class TaskGraph(MaafItem):
                 paths.append(path)
 
         if not paths:
+            # print(f"!!! TaskGraph get_path failed: No path found between {source} and {target} meeting the requirements: {requirement} !!!")
             return None
 
         # -> Filter the paths based on the selection method
