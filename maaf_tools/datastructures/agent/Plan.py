@@ -53,13 +53,16 @@ class Plan(MaafItem):
         return iter(self.task_sequence)
 
     @property
-    def current_task_id(self) -> str:
+    def current_task_id(self) -> Optional[str]:
         """
         Get the id of the current task in the plan.
 
         :return: The id of the current task.
         """
-        return self.task_sequence[0]
+        try:
+            return self.task_sequence[0]
+        except IndexError:
+            return None
 
     def has_task(self, task_id: str) -> bool:
         """
@@ -391,3 +394,13 @@ if __name__ == "__main__":
     print(plan.get_path(tasklog=tasklog))
     # print(plan.get_node_pairs())
     # print(plan.get_node_pairs(agent_id="agent_1"))
+
+    # -> Clone and modify plan to ensure plans instance are disconnected
+    print(plan)
+
+    plan_clone = plan.clone()
+    plan_clone.remove_task(task1)
+
+    print(plan)
+
+    print(plan_clone)

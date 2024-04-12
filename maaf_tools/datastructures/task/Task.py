@@ -11,9 +11,15 @@ import networkx as nx
 from networkx import MultiGraph
 
 # Local Imports
+# try:
+#     from maaf_tools.datastructures.MaafItem import MaafItem
+#     from maaf_tools.datastructures.serialisation import *
+#
+# except:
+#     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+#     from maaf_tools.maaf_tools.datastructures.serialisation import *
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
-
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
@@ -77,7 +83,7 @@ class Task(MaafItem):
         return {
             "id": self.id,
             "type": self.type,
-            "creator": self.creator,
+            # "creator": self.creator,
             "instructions": self.instructions,
         }
 
@@ -168,59 +174,82 @@ class Task(MaafItem):
 
         return task_state_change, task_terminated
 
-    # ============================================================== To
-    def asdict(self, include_local: bool = False) -> dict:
-        """
-        Create a dictionary containing the fields of the Task data class instance with their current values.
+    # # ============================================================== To
+    # def asdict(self, include_local: bool = False) -> dict:
+    #     """
+    #     Create a dictionary containing the fields of the Task data class instance with their current values.
+    #
+    #     :param include_local: Whether to include the local field in the dictionary.
+    #
+    #     :return: A dictionary with field names as keys and current values.
+    #     """
+    #     try:
+    #         from maaf_tools.datastructures.serialisation import asdict
+    #
+    #     except ImportError:
+    #         from maaf_tools.maaf_tools.datastructures.serialisation import asdict
+    #
+    #     if not include_local:
+    #         fields_exclusion_lst = ["local"]
+    #     else:
+    #         fields_exclusion_lst = []
+    #
+    #     fields_dict = asdict(item=self, fields_exclusion_lst=fields_exclusion_lst)
+    #
+    #     return fields_dict
+    #
+    # # ============================================================== From
+    # @classmethod
+    # def from_dict(cls, task_dict: dict, partial: bool = False) -> "Task":
+    #     """
+    #     Convert a dictionary to a task.
+    #
+    #     :param task_dict: The dictionary representation of the task
+    #     :param partial: Whether to allow creation from a dictionary with missing fields.
+    #
+    #     :return: A task object
+    #     """
+    #     try:
+    #         from maaf_tools.datastructures.serialisation import from_dict
+    #
+    #     except ImportError:
+    #         from maaf_tools.maaf_tools.datastructures.serialisation import from_dict
+    #
+    #     item = from_dict(cls=cls, item_dict=task_dict, partial=partial)
+    #
+    #     return item
 
-        :param include_local: Whether to include the local field in the dictionary.
 
-        :return: A dictionary with field names as keys and current values.
-        """
-        # -> Get the fields of the Task class
-        task_fields = fields(self)
+if __name__ == "__main__":
+    from pprint import pprint
+    import pandas as pd
 
-        if not include_local:
-            # > Exclude the local field
-            task_fields = [f for f in task_fields if f.name != "local"]
+    task = Task(
+        id="task_1",
+        type="task",
+        creator="agent_1",
+        instructions={"skill_1": "task_1"},
 
-        # -> Create a dictionary with field names as keys and their current values
-        fields_dict = {f.name: getattr(self, f.name) for f in task_fields}
+        affiliations=["affiliation_1"],
+        priority=1,
 
-        return fields_dict
+        creation_timestamp=0.0,
+        termination_timestamp=None,
+        termination_source_id=None,
 
-    # ============================================================== From
-    @classmethod
-    def from_dict(cls, task_dict: dict, partial: bool = False) -> "Task":
-        """
-        Convert a dictionary to a task.
+        status="pending",
 
-        :param task_dict: The dictionary representation of the task
-        :param partial: Whether to allow creation from a dictionary with missing fields.
+        shared={
+            "c_matrix": pd.DataFrame({
+                "agent_1": [0, 1, 2],
+                "agent_2": [1, 0, 3],
+                "agent_3": [2, 3, 0]
+            }),
+        },
+        local={}
+    )
 
-        :return: A task object
-        """
-        # -> Get the fields of the Task class
-        task_fields = fields(cls)
-
-        # -> Exclude the local field if not provided
-        if "local" not in task_dict.keys():
-            task_fields = [f for f in task_fields if f.name != "local"]
-
-        # -> Extract field names from the fields
-        field_names = {f.name for f in task_fields}
-
-        if not partial:
-            # -> Check if all required fields are present in the dictionary
-            if not field_names.issubset(task_dict.keys()):
-                raise ValueError(f"!!! Task creation from dictionary failed: Task dictionary is missing required fields: {task_dict.keys() - field_names} !!!")
-
-        else:
-            # > Remove all fields not present in the dictionary
-            task_fields = [f for f in task_fields if f.name in task_dict.keys()]
-
-        # -> Extract values from the dictionary for the fields present in the class
-        field_values = {f.name: task_dict[f.name] for f in task_fields}
-
-        # -> Create and return a Task object
-        return cls(**field_values)
+    task_dict = task.asdict()
+    pprint(task_dict)
+    task2 = Task.from_dict(task_dict, partial=True)
+    pprint(task2.asdict())

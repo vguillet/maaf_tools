@@ -47,6 +47,15 @@ class AgentState(State):
         return f"State of agent {self.agent_id} at {self.timestamp}"
 
     @property
+    def pos(self) -> list:
+        """
+        Get the location of the agent as a tuple.
+
+        :return: A tuple containing the x and y coordinates of the agent.
+        """
+        return [self.x, self.y]
+
+    @property
     def status(self) -> str:
         """
 
@@ -63,20 +72,6 @@ class AgentState(State):
         return "active" if active else "inactive"
 
     # ============================================================== To
-    def asdict(self) -> dict:
-        """
-        Create a dictionary containing the fields of the AgentState data class instance with their current values.
-
-        :return: A dictionary with field names as keys and current values.
-        """
-        # -> Get the fields of the Agent class
-        state_fields = fields(self)
-
-        # -> Create a dictionary with field names as keys and their current values
-        fields_dict = {f.name: getattr(self, f.name) for f in state_fields}
-
-        return fields_dict
-
     def asdf(self) -> pd.DataFrame:
         """
         Create a pandas DataFrame from the AgentState data class instance.
@@ -94,34 +89,3 @@ class AgentState(State):
         return state_df
 
     # ============================================================== From
-    @classmethod
-    def from_dict(cls, agent_dict: dict, partial: bool = False) -> "AgentState":
-        """
-        Convert a dictionary to an AgentState.
-
-        :param agent_dict: The dictionary representation of the AgentState
-        :param partial: Whether to allow creation from a dictionary with missing fields.
-
-        :return: An agent object
-        """
-
-        # -> Get the fields of the AgentState class
-        agent_fields = fields(cls)
-
-        # -> Extract field names from the fields
-        field_names = {field.name for field in agent_fields}
-
-        if not partial:
-            # -> Check if all required fields are present in the dictionary
-            if not field_names.issubset(agent_dict.keys()):
-                raise ValueError(f"!!! AgentState creation from dictionary failed: AgentState dictionary is missing required fields: {agent_dict.keys() - field_names} !!!")
-
-        else:
-            # > Remove fields not present in the dictionary
-            agent_fields = [field for field in agent_fields if field.name in agent_dict]
-
-        # -> Extract values from the dictionary for the fields present in the class
-        field_values = {field.name: agent_dict[field.name] for field in agent_fields}
-
-        # -> Create and return an Agent object
-        return cls(**field_values)

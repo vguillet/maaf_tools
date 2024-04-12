@@ -42,13 +42,13 @@ def json_to_graph(graph_json: str) -> (nx.Graph, dict):
     pos = {eval(k): v for k, v in data["pos"].items()}
     env_type = data["env_type"]
 
-    env = {
+    environment = {
         "env_type": env_type,
         "graph": graph,
         "pos": pos
         }
 
-    return env
+    return environment
 
 
 def euler_from_quaternion(quat):

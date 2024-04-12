@@ -338,5 +338,6 @@ if "__main__" == __name__:
 
     print(fleet_1.asdf().to_string())
 
-
+    print(fleet_1.asdict())
+    print(fleet_1.clone().asdict())
 

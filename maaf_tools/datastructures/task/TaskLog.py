@@ -477,57 +477,58 @@ if __name__ == "__main__":
     tasklog.add_task([task1, task2, task3])
 
     # -> Print task log
-    print(tasklog)
+    print(tasklog.asdict())
+    print(tasklog.clone().asdict())
 
-    print(tasklog.task_graph)
-
-    # -> Add path between tasks
-    tasklog.task_graph.add_path(
-        source_node=task1.id,
-        target_node=task2.id,
-        path={
-            "id": "path_1",
-            "requirements": ["skill_1"],
-            "path": [task1.id, task2.id]
-        }
-    )
-
-    tasklog.add_path(
-        source_node=task2.id,
-        target_node=task3.id,
-        path={
-            "id": "path_2",
-            "requirements": ["skill_2"],
-            "path": [task2.id, task3.id]
-        }
-    )
-
-    tasklog.add_path(
-        source_node=task1.id,
-        target_node=task3.id,
-        path={
-            "id": "path_3",
-            "requirements": ["skill_1"],
-            "path": [task1.id, task3.id]
-        }
-    )
-
-    # -> Serialise task log
-    tasklog_serialised = tasklog.asdict()
-
-    pprint(tasklog_serialised)
-
-    # -> Deserialise task log
-    tasklog_deserialised = TaskLog.from_dict(tasklog_serialised)
-
-    print(tasklog_deserialised)
-
-    print(tasklog_deserialised.task_graph)
-
-    print(tasklog.asdf().to_string())
-
-    new_tasklog = tasklog.clone()
-
-    print(new_tasklog.task_graph)
-
-    print(new_tasklog.asdict())
+    # print(tasklog.task_graph)
+    #
+    # # -> Add path between tasks
+    # tasklog.task_graph.add_path(
+    #     source_node=task1.id,
+    #     target_node=task2.id,
+    #     path={
+    #         "id": "path_1",
+    #         "requirements": ["skill_1"],
+    #         "path": [task1.id, task2.id]
+    #     }
+    # )
+    #
+    # tasklog.add_path(
+    #     source_node=task2.id,
+    #     target_node=task3.id,
+    #     path={
+    #         "id": "path_2",
+    #         "requirements": ["skill_2"],
+    #         "path": [task2.id, task3.id]
+    #     }
+    # )
+    #
+    # tasklog.add_path(
+    #     source_node=task1.id,
+    #     target_node=task3.id,
+    #     path={
+    #         "id": "path_3",
+    #         "requirements": ["skill_1"],
+    #         "path": [task1.id, task3.id]
+    #     }
+    # )
+    #
+    # # -> Serialise task log
+    # tasklog_serialised = tasklog.asdict()
+    #
+    # pprint(tasklog_serialised)
+    #
+    # # -> Deserialise task log
+    # tasklog_deserialised = TaskLog.from_dict(tasklog_serialised)
+    #
+    # print(tasklog_deserialised)
+    #
+    # print(tasklog_deserialised.task_graph)
+    #
+    # print(tasklog.asdf().to_string())
+    #
+    # new_tasklog = tasklog.clone()
+    #
+    # print(new_tasklog.task_graph)
+    #
+    # print(new_tasklog.asdict())

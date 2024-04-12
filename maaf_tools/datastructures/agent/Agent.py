@@ -12,7 +12,7 @@ try:
     from maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.datastructures.task.Task import Task
 
-except:
+except ImportError:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
 
@@ -103,6 +103,7 @@ class Agent(MaafItem):
                          tasklog: TaskLog,
                          task: Task or str,
                          position: Optional[int] = None,
+                         bid: Optional[float] = None,
                          logger=None
                          ) -> (bool, bool):
         """
@@ -129,8 +130,11 @@ class Agent(MaafItem):
             )
 
             if logger and add_task_success:
-                logger.info(
-                    f"{self.id} + Assigning task {task_id} to self - Pending task count: {len(tasklog.ids_pending)})")
+                if bid is not None:
+                    # logger.info(f"{self.id} + Task {task_id} assigned to self (bid: {round(bid, 4)}) - Pending task count: {len(tasklog.ids_pending)})")
+                    logger.info(f"{self.id} + Task {task_id} assigned to self (bid: {bid}) - Pending task count: {len(tasklog.ids_pending)})")
+                else:
+                    logger.info(f"{self.id} + Task {task_id} assigned to self - Pending task count: {len(tasklog.ids_pending)})")
             elif logger and not add_task_success:
                 logger.info(f"!!! Task {task_id} could not be added to the plan of {self.id} !!!")
 
@@ -146,6 +150,7 @@ class Agent(MaafItem):
                               tasklog: TaskLog,
                               task: Task or str,
                               forward: bool = False,
+                              motive: Optional[str] = None,
                               logger=None
                               ) -> (bool, bool):
         """
@@ -154,6 +159,7 @@ class Agent(MaafItem):
         :param tasklog: The task log containing the tasks and the paths between them.
         :param task: The task to be removed from the plan.
         :param forward: Whether to remove the tasks after the specified task.
+        :param motive: The motive for removing the task.
         :param logger: The logger to log messages to (optional).
 
         :return: A tuple containing the success of removing the task from the task bundle and updating the plan.
@@ -172,8 +178,11 @@ class Agent(MaafItem):
             )
 
             if logger and remove_task_success:
-                logger.info(
-                    f"{self.id} - Dropping task {task_id} from task list - Pending task count: {len(tasklog.ids_pending)}")
+                if motive is None:
+                    logger.info(f"{self.id} - Task {task_id} dropped from task list - Pending task count: {len(tasklog.ids_pending)}")
+                else:
+                    logger.info(f"{self.id} - Task {task_id} dropped from task list (motive: {motive}) - Pending task count: {len(tasklog.ids_pending)}")
+
             elif logger and not remove_task_success:
                 logger.warning(f"{self.id} - Task {task_id} not in task list")
 
@@ -283,71 +292,43 @@ class Agent(MaafItem):
 
         return agent_state_change, agent_plan_change, agent_enabled, agent_disabled
 
-
     # ============================================================== To
-    def asdict(self, include_local: bool = False) -> dict:
-        """
-        Create a dictionary containing the fields of the Agent data class instance with their current values.
-
-        :param include_local: Whether to include the local data in the dictionary
-
-        :return: A dictionary with field names as keys and current values.
-        """
-        # -> Get the fields of the Agent class
-        agent_fields = fields(self)
-
-        if not include_local:
-            # > Exclude the local field
-            agent_fields = [f for f in agent_fields if f.name != "local"]
-
-        # -> Create a dictionary with field names as keys and their current values
-        fields_dict = {f.name: getattr(self, f.name) for f in agent_fields}
-
-        # -> Convert state to dict
-        fields_dict["state"] = self.state.asdict()
-
-        # -> Convert plan to dict
-        fields_dict["plan"] = self.plan.asdict()
-
-        return fields_dict
 
     # ============================================================== From
-    @classmethod
-    def from_dict(cls, agent_dict: dict, partial: bool = False) -> "Agent":
-        """
-        Convert a dictionary to an agent.
 
-        :param agent_dict: The dictionary representation of the agent
 
-        :return: An agent object
-        """
-        # -> Get the fields of the Agent class
-        agent_fields = fields(cls)
+if __name__ == "__main__":
+    from pprint import pprint
+    import pandas as pd
 
-        # > Exclude the local field if not provided
-        if "local" not in agent_dict.keys():
-            agent_fields = [f for f in agent_fields if f.name != "local"]
+    agent = Agent(
+        id="agent_0",
+        name="Agent 0",
+        agent_class="Drone",
+        hierarchy_level=0,
+        affiliations=["affiliation_0"],
+        specs={"speed": 10},
+        skillset=["skill_0", "skill_1"],
+        state=AgentState(
+            x=0,
+            y=0,
+            z=0,
+            timestamp=1,
+            agent_id="agent_0",
+        ),
+        plan=Plan(),
+        shared={
+            "c_matrix": pd.DataFrame({
+                "agent_1": [0, 1, 2],
+                "agent_2": [1, 0, 3],
+                "agent_3": [2, 3, 0]
+            }),
+        }
+    )
 
-        # -> Extract field names from the fields
-        field_names = {f.name for f in agent_fields}
+    agent_dict = agent.asdict()
+    pprint(agent_dict)
 
-        if not partial:
-            # -> Check if all required fields are present in the dictionary
-            if not field_names.issubset(agent_dict.keys()):
-                raise ValueError(f"!!! Agent creation from dictionary failed: Agent dictionary is missing required fields: {agent_dict.keys() - field_names} !!!")
-
-        else:
-            # > Remove all fields not present in the dictionary
-            agent_fields = [f for f in agent_fields if f.name in agent_dict]
-
-        # -> Extract values from the dictionary for the fields present in the class
-        field_values = {f.name: agent_dict[f.name] for f in agent_fields}
-
-        # -> Convert state from dict
-        field_values["state"] = AgentState.from_dict(agent_dict["state"])
-
-        # -> Convert plan from dict
-        field_values["plan"] = Plan.from_dict(agent_dict["plan"])
-
-        # -> Create and return an Agent object
-        return cls(**field_values)
+    print("\n------------------------------\n")
+    agent2 = Agent.from_dict(agent_dict, partial=True)
+    pprint(agent2.asdict())
