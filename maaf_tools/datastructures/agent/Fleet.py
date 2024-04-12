@@ -289,6 +289,9 @@ class Fleet(MaafList):
 
 
 if "__main__" == __name__:
+    import pandas as pd
+    from pprint import pprint
+
     # Test Agent data class
     agent1 = Agent(
         id="1",
@@ -312,6 +315,13 @@ if "__main__" == __name__:
         ),
         plan=Plan(),
         local={"local1": "value1"},
+        shared={
+            "c_matrix": pd.DataFrame({
+                "agent_1": [0, 1, 2],
+                "agent_2": [1, 0, 3],
+                "agent_3": [2, 3, 0]
+            }),
+        },
     )
 
     agent2 = Agent.from_dict(agent1.asdict())
@@ -319,25 +329,30 @@ if "__main__" == __name__:
     agent2.id = "2"
     agent2.local["local1"] = "value2"
 
-    print(agent1.id, agent1.name, agent1.local)
-    print(agent2.id, agent2.name, agent2.local)
+    # print(agent1.id, agent1.name, agent1.local)
+    # print(agent2.id, agent2.name, agent2.local)
 
     # Test Fleet data class
     fleet_1 = Fleet()
     fleet_1.add_agent(agent1)
+    fleet_1.add_agent(agent2)
 
     fleet_2 = Fleet()
     fleet_2.add_agent(agent2)
 
+    # print(fleet_1)
+    # print(fleet_2)
+    #
+    # print(fleet_1["1"].name, fleet_1["1"].local)
+    # fleet_1.merge(fleet_2, prioritise_local=False)
+    # print(fleet_1["1"].name, fleet_1["1"].local)
+    #
+    # print(fleet_1.asdf().to_string())
+    print("====================================================================")
     print(fleet_1)
-    print(fleet_2)
+    pprint(fleet_1.asdict())
 
-    print(fleet_1["1"].name, fleet_1["1"].local)
-    fleet_1.merge(fleet_2, prioritise_local=False)
-    print(fleet_1["1"].name, fleet_1["1"].local)
-
-    print(fleet_1.asdf().to_string())
-
-    print(fleet_1.asdict())
+    pprint(fleet_1.asdict())
+    print(Fleet.from_dict(fleet_1.asdict()))
     print(fleet_1.clone().asdict())
 

@@ -7,6 +7,7 @@ from datetime import datetime
 from copy import deepcopy
 import pandas as pd
 import numpy as np
+from pprint import pprint, pformat
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
@@ -123,7 +124,7 @@ def asdict(item, fields_exclusion_lst: list = []) -> dict:
             fields_types[field.name] = []
 
             for subitem in getattr(item, field.name):
-                if not hasattr(subitem, "__dict__") and not hasattr(subitem, "__dataclass_fields__"):
+                if not hasattr(subitem, "__dict__") or not hasattr(subitem, "__dataclass_fields__"):
 
                     fields_dict[field.name].append(subitem)
                     try:
@@ -133,14 +134,8 @@ def asdict(item, fields_exclusion_lst: list = []) -> dict:
 
                     continue
 
-                subitem_fields = fields(subitem)
-
-                for subfield in subitem_fields:
-                    fields_dict[field.name][subfield.name], fields_types[field.name][subfield.name] = \
-                        recursive_get_field_type_and_value(
-                            item=subitem,
-                            field=subfield,
-                        )
+                else:
+                    fields_dict[field.name].append(subitem.asdict())
 
             return fields_dict, fields_types
 
@@ -159,14 +154,8 @@ def asdict(item, fields_exclusion_lst: list = []) -> dict:
 
                     continue
 
-                subitem_fields = fields(subitem)
-
-                for subfield in subitem_fields:
-                    fields_dict[field.name][subfield.name], fields_types[field.name][subfield.name] = \
-                        recursive_get_field_type_and_value(
-                            item=subitem,
-                            field=subfield,
-                        )
+                else:
+                    fields_dict[field.name][key] = subitem.asdict()
 
             return fields_dict, fields_types
 
@@ -215,15 +204,17 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
     :return: An item object
     """
 
-    def recursive_create_item(field_dict: dict, field_type: dict, partial: bool) -> object:
+    def recursive_create_item(field, field_type: dict, partial: bool) -> object:
         """
         Recursive function to create the item object.
 
-        :param field_dict: The dictionary representation of the item.
+        :param field: The dictionary representation of the item.
         :param field_type: The types of the fields in the dictionary.
 
         :return: The item object.
         """
+
+        pprint(f"--------------------------------------- DOING {field_type}: {field}")
 
         if type(field_type) == str:
             field_string = field_type
@@ -234,21 +225,27 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
 
         if hasattr(cls, "from_dict") and cls:
             try:
-                return cls.from_dict(field_dict, partial)
+                return cls.from_dict(field, partial)
             except:
-                return cls.from_dict(field_dict)
+                return cls.from_dict(field)
 
-        elif isinstance(field_dict, list):
-            return [recursive_create_item(subitem, field_type[i], partial) for i, subitem in enumerate(field_dict)]
+        elif isinstance(field, list):
+            for i, subitem in enumerate(field):
+                print(f"--------------------------------------- DOING {field_type[i]}: {subitem}")
 
-        elif isinstance(field_dict, dict):
-            return {key: recursive_create_item(subitem, field_type[key], partial) for key, subitem in field_dict.items()}
+            # TODO: Correct this, in the scenario that the item is a dataclass, the field_type is stored in subitem, and
+            # Cannot be retrieved from field_type. This and the dict bellow need to test for the type of subitem and
+            # Retrieve the field_type from either the field_type list or the field_type dict accordingly.
+            return [recursive_create_item(subitem, field_type[i], partial) for i, subitem in enumerate(field)]
+
+        elif isinstance(field, dict):
+            return {key: recursive_create_item(subitem, field_type[key], partial) for key, subitem in field.items()}
 
         elif field_string == "None":
             return None
 
         else:
-            return cls(field_dict)
+            return cls(field)
 
     # -> Get the fields of the item class
     item_fields = fields(cls)

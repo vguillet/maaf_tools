@@ -26,7 +26,7 @@ class MaafItem(ABC):
         """
         Clone the item.
         """
-        return self.from_dict(deepcopy(self.asdict()))
+        return self.from_dict(item_dict=deepcopy(self.asdict()))
 
     # ============================================================== Set
 
