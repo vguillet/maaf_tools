@@ -339,7 +339,6 @@ if "__main__" == __name__:
 
     fleet_2 = Fleet()
     fleet_2.add_agent(agent2)
-
     # print(fleet_1)
     # print(fleet_2)
     #
@@ -348,11 +347,13 @@ if "__main__" == __name__:
     # print(fleet_1["1"].name, fleet_1["1"].local)
     #
     # print(fleet_1.asdf().to_string())
-    print("====================================================================")
-    print(fleet_1)
-    pprint(fleet_1.asdict())
+    # print("====================================================================")
+    # # print(fleet_1)
+    # pprint(fleet_1.asdict())
+    #
+    # print("------------------------", fleet_1, fleet_1.clone())
+    # pprint(type(fleet_1.asdict()["items"][0]["shared"]["c_matrix"]))
+    # pprint(Fleet.from_dict(fleet_1.asdict()))
 
-    pprint(fleet_1.asdict())
-    print(Fleet.from_dict(fleet_1.asdict()))
-    print(fleet_1.clone().asdict())
+    # print(fleet_1.clone().asdict())
 

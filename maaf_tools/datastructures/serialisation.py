@@ -107,35 +107,34 @@ def asdict(item, fields_exclusion_lst: list = []) -> dict:
         :return: The field type and value dictionaries.
         """
 
-        # > If field value has asdict method, call it
-        if hasattr(getattr(item, field.name), "asdict"):
-            fields_dict[field.name] = getattr(item, field.name).asdict()
-
+        def get_item_type_and_value(item):
             try:
-                fields_types[field.name] = types_class_str_dict[type(getattr(item, field.name))]
+                item_type = types_class_str_dict[type(item)]
             except KeyError:
-                raise KeyError(f"Type {field.type} not found in types_dict")
+                raise KeyError(f"Type {type(item)} not found in types_dict")
 
-            return fields_dict, fields_types
+            # ----- Dataclasses
+            if hasattr(item, "asdict"):
+                return item.asdict(), item_type
 
+            # ----- Class specific
+            elif isinstance(item, pd.DataFrame):
+                return item.to_dict(orient="index"), item_type
+
+            # ----- Base
+            else:
+                return item, item_type
+
+        # ----- Mutables
         # > If the field is a mutable sequence, apply recursion
-        elif isinstance(getattr(item, field.name), list):
+        if isinstance(getattr(item, field.name), list):
             fields_dict[field.name] = []
             fields_types[field.name] = []
 
             for subitem in getattr(item, field.name):
-                if not hasattr(subitem, "__dict__") or not hasattr(subitem, "__dataclass_fields__"):
-
-                    fields_dict[field.name].append(subitem)
-                    try:
-                        fields_types[field.name].append(types_class_str_dict[type(subitem)])
-                    except KeyError:
-                        raise KeyError(f"Type {field.type} not found in types_dict")
-
-                    continue
-
-                else:
-                    fields_dict[field.name].append(subitem.asdict())
+                item_dict, item_type = get_item_type_and_value(subitem)
+                fields_dict[field.name].append(item_dict)
+                fields_types[field.name].append(item_type)
 
             return fields_dict, fields_types
 
@@ -145,29 +144,16 @@ def asdict(item, fields_exclusion_lst: list = []) -> dict:
             fields_types[field.name] = {}
 
             for key, subitem in getattr(item, field.name).items():
-                if not hasattr(subitem, "__dict__") or not hasattr(subitem, "__dataclass_fields__"):
-                    fields_dict[field.name][key] = subitem
-                    try:
-                        fields_types[field.name][key] = types_class_str_dict[type(subitem)]
-                    except KeyError:
-                        raise KeyError(f"Type {field.type} not found in types_dict")
-
-                    continue
-
-                else:
-                    fields_dict[field.name][key] = subitem.asdict()
+                item_dict, item_type = get_item_type_and_value(subitem)
+                fields_dict[field.name][key] = item_dict
+                fields_types[field.name][key] = item_type
 
             return fields_dict, fields_types
 
+        # ----- Base
         # > Else, add the field value to the dictionary
         else:
-            fields_dict[field.name] = getattr(item, field.name)
-            try:
-                fields_types[field.name] = types_class_str_dict[type(getattr(item, field.name))]
-
-            except KeyError:
-                raise KeyError(f"Type {field.type} not found in types_dict")
-
+            fields_dict[field.name], fields_types[field.name] = get_item_type_and_value(getattr(item, field.name))
             return fields_dict, fields_types
 
     # -> Get the fields of the item class
@@ -189,7 +175,7 @@ def asdict(item, fields_exclusion_lst: list = []) -> dict:
         fields_dict, fields_types = recursive_get_field_type_and_value(item, field)
 
     # -> Add field types to fields_dict
-    fields_dict["types"] = fields_types
+    fields_dict["field_types"] = fields_types
 
     return fields_dict
 
@@ -214,14 +200,14 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
         :return: The item object.
         """
 
-        pprint(f"--------------------------------------- DOING {field_type}: {field}")
+        # pprint(f"--------------------------------------- DOING {field_type}: {field}")
 
         if type(field_type) == str:
-            field_string = field_type
+            field_type_string = field_type
         else:
-            field_string = types_class_str_dict[type(field_type)]
+            field_type_string = types_class_str_dict[type(field_type)]
 
-        cls = types_str_class_dict[field_string]
+        cls = types_str_class_dict[field_type_string]
 
         if hasattr(cls, "from_dict") and cls:
             try:
@@ -229,21 +215,21 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
             except:
                 return cls.from_dict(field)
 
+        # ----- Mutables
         elif isinstance(field, list):
-            for i, subitem in enumerate(field):
-                print(f"--------------------------------------- DOING {field_type[i]}: {subitem}")
-
-            # TODO: Correct this, in the scenario that the item is a dataclass, the field_type is stored in subitem, and
-            # Cannot be retrieved from field_type. This and the dict bellow need to test for the type of subitem and
-            # Retrieve the field_type from either the field_type list or the field_type dict accordingly.
             return [recursive_create_item(subitem, field_type[i], partial) for i, subitem in enumerate(field)]
 
         elif isinstance(field, dict):
             return {key: recursive_create_item(subitem, field_type[key], partial) for key, subitem in field.items()}
 
-        elif field_string == "None":
+        # ----- Class specific
+        elif field_type_string == "pd.DataFrame":
+            return pd.DataFrame.from_dict(field, orient="index")
+
+        elif field_type_string == "None":
             return None
 
+        # ----- Base
         else:
             return cls(field)
 
@@ -260,7 +246,7 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
     field_names = {field.name for field in item_fields}
 
     # -> Extract types from the dictionary
-    fields_types = item_dict.pop("types")
+    fields_types = item_dict.pop("field_types")
 
     if not partial:
         # -> Check if all required fields are present in the dictionary

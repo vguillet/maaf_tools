@@ -12,6 +12,8 @@ try:
     from maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.datastructures.task.Task import Task
 
+    from maaf_tools.tools import deep_compare
+
 except ImportError:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
@@ -20,6 +22,8 @@ except ImportError:
     from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
     from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.maaf_tools.datastructures.task.Task import Task
+
+    from maaf_tools.maaf_tools.tools import deep_compare
 
 ##################################################################################################################
 
@@ -269,7 +273,8 @@ class Agent(MaafItem):
                 # > Get the field value from the received agent
                 field_value = getattr(agent, field.name)
 
-                if field_value != getattr(self, field.name):
+                # if field_value != getattr(self, field.name):
+                if deep_compare(field_value, getattr(self, field.name)):
                     # > Update the field value
                     setattr(self, field.name, field_value)
                     agent_state_change = True

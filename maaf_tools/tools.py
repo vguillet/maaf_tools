@@ -3,6 +3,8 @@ from math import pi
 from numpy import arctan2, arcsin
 import networkx as nx
 from json import loads, dumps
+import numpy as np
+import pandas as pd
 
 from rclpy.time import Time
 
@@ -115,6 +117,51 @@ def consistent_random(string: str, min_value: float, max_value: float) -> float:
     random_value = min_value + (hash_value % 1000000) / 1000000 * (max_value - min_value)
 
     return random_value
+
+
+def deep_compare(obj1, obj2):
+    """
+    Deep comparison function for various types, including NumPy arrays, Pandas DataFrames, and Pandas Series.
+
+    :param obj1: First object to compare.
+    :param obj2: Second object to compare.
+
+    :return: True if the objects are deeply equal, False otherwise.
+    """
+    # If both objects are Pandas DataFrames, Series, or NumPy arrays, use appropriate comparison methods
+    if isinstance(obj1, (pd.DataFrame, pd.Series, np.ndarray)) and isinstance(obj2,
+                                                                              (pd.DataFrame, pd.Series, np.ndarray)):
+        if isinstance(obj1, pd.DataFrame) and isinstance(obj2, pd.DataFrame):
+            return obj1.equals(obj2)
+        elif isinstance(obj1, pd.Series) and isinstance(obj2, pd.Series):
+            return obj1.equals(obj2)
+        elif isinstance(obj1, np.ndarray) and isinstance(obj2, np.ndarray):
+            return np.array_equal(obj1, obj2)
+
+    # If the objects are not of the same type, they are not equal
+    if type(obj1) != type(obj2):
+        return False
+
+    # If the objects are lists or tuples, recursively compare each element
+    if isinstance(obj1, (list, tuple)):
+        if len(obj1) != len(obj2):
+            return False
+        for item1, item2 in zip(obj1, obj2):
+            if not deep_compare(item1, item2):
+                return False
+        return True
+
+    # If the objects are dictionaries, recursively compare each value
+    if isinstance(obj1, dict):
+        if len(obj1) != len(obj2):
+            return False
+        for key in obj1:
+            if key not in obj2 or not deep_compare(obj1[key], obj2[key]):
+                return False
+        return True
+
+    # For other types (e.g., int, float, str), use the equality operator
+    return obj1 == obj2
 
 
 if __name__ == "__main__":
