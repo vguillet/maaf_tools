@@ -13,6 +13,7 @@ try:
     from maaf_tools.datastructures.task.Task import Task
 
     from maaf_tools.tools import deep_compare
+    from maaf_tools.Singleton import SLogger
 
 except ImportError:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
@@ -24,6 +25,7 @@ except ImportError:
     from maaf_tools.maaf_tools.datastructures.task.Task import Task
 
     from maaf_tools.maaf_tools.tools import deep_compare
+    from maaf_tools.maaf_tools.Singleton import SLogger
 
 ##################################################################################################################
 
@@ -221,6 +223,7 @@ class Agent(MaafItem):
     def merge(self,
               agent: "Agent",
               prioritise_local: bool = False,
+              id = None,
               *args, **kwargs
               ) -> (bool, bool, bool, bool):
         """
@@ -250,6 +253,10 @@ class Agent(MaafItem):
         agent_enabled = False
         agent_disabled = False
 
+        if id == "Turtle_1" and agent.id == "Turtle_2":
+            SLogger().info(f"Should agent be merged - received ({agent.id}): {agent.state.timestamp} > local ({self.id}): {self.state.timestamp} = {agent.state.timestamp > self.state.timestamp}")
+            self.state.print_get_timestamp()
+
         # -> If prioritise_local is True, only add new information from the received agent shared field
         if prioritise_local:
             # -> Add new information from received agent shared field
@@ -273,7 +280,7 @@ class Agent(MaafItem):
                 # > Get the field value from the received agent
                 field_value = getattr(agent, field.name)
 
-                # if field_value != getattr(self, field.name):
+                # > If field_value != getattr(self, field.name):
                 if deep_compare(field_value, getattr(self, field.name)):
                     # > Update the field value
                     setattr(self, field.name, field_value)
@@ -294,6 +301,9 @@ class Agent(MaafItem):
 
                 agent_state_change = True
                 agent_plan_change = True
+
+        if id == "Turtle_1" and agent.id == "Turtle_2":
+            SLogger().info(f"___________ DONE MERGING {agent.id} in")
 
         return agent_state_change, agent_plan_change, agent_enabled, agent_disabled
 
@@ -318,7 +328,7 @@ if __name__ == "__main__":
             x=0,
             y=0,
             z=0,
-            timestamp=1,
+            _timestamp=1,
             agent_id="agent_0",
         ),
         plan=Plan(),
@@ -331,9 +341,21 @@ if __name__ == "__main__":
         }
     )
 
+    def print_agent():
+        return None
+
+    agent.state.set_get_timestamp(print_agent)
+
+    print(agent.state.timestamp)
+
     agent_dict = agent.asdict()
     pprint(agent_dict)
 
     print("\n------------------------------\n")
     agent2 = Agent.from_dict(agent_dict, partial=True)
-    pprint(agent2.asdict())
+
+    # pprint(agent2.asdict())
+
+    print(agent2.state.timestamp)
+
+    # agent.merge(agent2)

@@ -14,12 +14,28 @@ from copy import deepcopy
 DEBUG = True
 
 
+@dataclass
 class MaafItem(ABC):
+    __pre_asdict_subscribers: list[callable] = field(default_factory=list, init=False)
+
     def __reduce__(self):
         """
         Reduce the item to a dictionary.
         """
         return self.__class__, (*self.asdict(),)  # -> Pass dictionary representation to constructor
+
+    def add_pre_asdict_subscriber(self, subscriber: callable):
+        """
+        Add a subscriber to the asdict method.
+        """
+        self.__pre_asdict_subscribers.append(subscriber)
+
+    def call_pre_asdict_subscribers(self):
+        """
+        Call the pre asdict subscribers.
+        """
+        for subscriber in self.__pre_asdict_subscribers:
+            subscriber(self)
 
     # ============================================================== Get
     def clone(self):
@@ -52,6 +68,9 @@ class MaafItem(ABC):
 
         except ImportError:
             from maaf_tools.maaf_tools.datastructures.serialisation import asdict
+
+        # -> Call pre asdict subscribers
+        self.call_pre_asdict_subscribers()
 
         if not include_local:
             fields_exclusion_lst = ["local"]

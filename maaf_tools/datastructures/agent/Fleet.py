@@ -12,6 +12,7 @@ try:
     from maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.datastructures.agent.Plan import Plan
     from maaf_tools.datastructures.agent.Agent import Agent
+    from maaf_tools.Singleton import SLogger
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
@@ -19,6 +20,7 @@ except:
     from maaf_tools.maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
     from maaf_tools.maaf_tools.datastructures.agent.Agent import Agent
+    from maaf_tools.maaf_tools.Singleton import SLogger
 
 ##################################################################################################################
 
@@ -181,6 +183,7 @@ class Fleet(MaafList):
               remove_agent_callback: Optional[callable] = None,
               fleet_state_change_callback: Optional[callable] = None,
               prioritise_local: bool = False,
+              id = None,
               *args, **kwargs
               ) -> bool:
         """
@@ -231,6 +234,7 @@ class Fleet(MaafList):
                 agent_state_change, agent_plan_change, agent_enabled, agent_disabled = self[agent.id].merge(
                     agent=agent,
                     prioritise_local=prioritise_local,
+                    id=id,
                     *args, **kwargs
                 )
 
@@ -303,7 +307,7 @@ if "__main__" == __name__:
         skillset=["skill1", "skill2"],
         state=AgentState(
             agent_id=1,
-            timestamp=1.0,
+            _timestamp=1.0,
             battery_level=100,
             stuck=False,
             x=0,
@@ -324,6 +328,11 @@ if "__main__" == __name__:
         },
     )
 
+    def print_agent():
+        return None
+
+    agent1.state.set_get_timestamp(print_agent)
+
     agent2 = Agent.from_dict(agent1.asdict())
     agent2.name = "Agent 2"
     agent2.id = "2"
@@ -343,9 +352,12 @@ if "__main__" == __name__:
     # print(fleet_2)
     #
     # print(fleet_1["1"].name, fleet_1["1"].local)
-    # fleet_1.merge(fleet_2, prioritise_local=False)
+    fleet_1.merge(fleet_2, prioritise_local=False)
     # print(fleet_1["1"].name, fleet_1["1"].local)
-    #
+
+    for agent in fleet_1:
+        print(agent.state.timestamp)
+
     # print(fleet_1.asdf().to_string())
     # print("====================================================================")
     # # print(fleet_1)
@@ -354,6 +366,6 @@ if "__main__" == __name__:
     # print("------------------------", fleet_1, fleet_1.clone())
     # pprint(type(fleet_1.asdict()["items"][0]["shared"]["c_matrix"]))
     # pprint(Fleet.from_dict(fleet_1.asdict()))
-
-    # print(fleet_1.clone().asdict())
+    #
+    # pprint(fleet_1.clone().asdict())
 

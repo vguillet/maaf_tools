@@ -262,46 +262,8 @@ class Plan(MaafItem):
         return paths
 
     # ============================================================== To
-    def asdict(self) -> dict:
-        """
-        Create a dictionary containing the fields of the Plan data class instance with their current values.
-
-        :return: A dictionary with field names as keys and current values.
-        """
-        # -> Get the fields of the Plan class
-        plan_fields = fields(self)
-
-        # -> Create a dictionary with the field names as keys and the current values as values
-        plan_dict = {field.name: getattr(self, field.name) for field in plan_fields}
-
-        return plan_dict
 
     # ============================================================== From
-    @classmethod
-    def from_dict(cls, plan_dict: dict, partial: bool = False) -> "Plan":
-        """
-        Create a dictionary containing the fields of the Plan data class instance with their current values.
-
-        :return: A dictionary with field names as keys and current values.
-        """
-        plan_fields = fields(cls)
-
-        # -> Extract field names from the fields
-        field_names = {f.name for f in plan_fields}
-
-        if not partial:
-            # -> Check if all required fields are present in the dictionary
-            if not field_names.issubset(plan_dict.keys()):
-                raise ValueError(f"!!! Plan creation from dictionary failed: Plan dictionary is missing required fields: {plan_dict.keys() - field_names} !!!")
-
-        else:
-            # > Remove all fields not present in the dictionary
-            plan_fields = [f for f in plan_fields if f.name in plan_dict.keys()]
-
-        # -> Extract values from the dictionary for the fields present in the class
-        field_values = {f.name: plan_dict[f.name] for f in plan_fields}
-
-        return cls(**field_values)
 
 
 if __name__ == "__main__":

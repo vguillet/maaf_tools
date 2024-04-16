@@ -211,7 +211,7 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
 
         if hasattr(cls, "from_dict") and cls:
             try:
-                return cls.from_dict(field, partial)
+                return cls.from_dict(item_dict=field, partial=partial)
             except:
                 return cls.from_dict(field)
 
