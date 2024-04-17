@@ -223,7 +223,6 @@ class Agent(MaafItem):
     def merge(self,
               agent: "Agent",
               prioritise_local: bool = False,
-              id = None,
               *args, **kwargs
               ) -> (bool, bool, bool, bool):
         """
@@ -253,10 +252,6 @@ class Agent(MaafItem):
         agent_enabled = False
         agent_disabled = False
 
-        if id == "Turtle_1" and agent.id == "Turtle_2":
-            SLogger().info(f"Should agent be merged - received ({agent.id}): {agent.state.timestamp} > local ({self.id}): {self.state.timestamp} = {agent.state.timestamp > self.state.timestamp}")
-            self.state.print_get_timestamp()
-
         # -> If prioritise_local is True, only add new information from the received agent shared field
         if prioritise_local:
             # -> Add new information from received agent shared field
@@ -281,7 +276,7 @@ class Agent(MaafItem):
                 field_value = getattr(agent, field.name)
 
                 # > If field_value != getattr(self, field.name):
-                if deep_compare(field_value, getattr(self, field.name)):
+                if not deep_compare(field_value, getattr(self, field.name)):
                     # > Update the field value
                     setattr(self, field.name, field_value)
                     agent_state_change = True
@@ -301,9 +296,6 @@ class Agent(MaafItem):
 
                 agent_state_change = True
                 agent_plan_change = True
-
-        if id == "Turtle_1" and agent.id == "Turtle_2":
-            SLogger().info(f"___________ DONE MERGING {agent.id} in")
 
         return agent_state_change, agent_plan_change, agent_enabled, agent_disabled
 

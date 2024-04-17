@@ -165,6 +165,14 @@ def deep_compare(obj1, obj2):
 
 
 if __name__ == "__main__":
-    # -> Test the consistent_random function
-    print(consistent_random("test", 0.0000000000001, 0.000000001))
-    print(consistent_random("test", 0.0000000000001, 0.000000001))
+    # > Test deep_compare
+    # > Dataframes
+    df1 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    df2 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+
+    print(deep_compare(df1, df2))    # True
+
+    dict1 = {"df": df1}
+    dict2 = {"df": df2}
+
+    print(deep_compare(dict1, dict2))    # True

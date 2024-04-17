@@ -183,7 +183,6 @@ class Fleet(MaafList):
               remove_agent_callback: Optional[callable] = None,
               fleet_state_change_callback: Optional[callable] = None,
               prioritise_local: bool = False,
-              id = None,
               *args, **kwargs
               ) -> bool:
         """
@@ -234,7 +233,6 @@ class Fleet(MaafList):
                 agent_state_change, agent_plan_change, agent_enabled, agent_disabled = self[agent.id].merge(
                     agent=agent,
                     prioritise_local=prioritise_local,
-                    id=id,
                     *args, **kwargs
                 )
 
