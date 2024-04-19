@@ -10,10 +10,14 @@ try:
     from maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.datastructures.task.Task import Task
 
+    from maaf_tools.Singleton import SLogger
+
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.maaf_tools.datastructures.task.Task import Task
+
+    from maaf_tools.maaf_tools.Singleton import SLogger
 
 ##################################################################################################################
 
@@ -94,7 +98,7 @@ class Plan(MaafItem):
             task_id = task
 
         if self.has_task(task_id):
-            print(f"!!! Task {task_id} is already in the plan !!!")
+            SLogger().info(f"!!! Task {task_id} is already in the plan !!!")
             return False
 
         # -> Add the task to the plan
@@ -130,7 +134,7 @@ class Plan(MaafItem):
             task_id = task
 
         if not self.has_task(task_id):
-            print(f"!!! Task {task_id} is not in the plan !!!")
+            (f"!!! Task {task_id} is not in the plan !!!")
             return False
 
         if forward:
@@ -366,3 +370,5 @@ if __name__ == "__main__":
     print(plan)
 
     print(plan_clone)
+
+    print(plan.get_node_pairs())

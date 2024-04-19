@@ -137,10 +137,17 @@ class Agent(MaafItem):
 
             if logger and add_task_success:
                 if bid is not None:
-                    # logger.info(f"{self.id} + Task {task_id} assigned to self (bid: {round(bid, 4)}) - Pending task count: {len(tasklog.ids_pending)})")
-                    logger.info(f"{self.id} + Task {task_id} assigned to self (bid: {bid}) - Pending task count: {len(tasklog.ids_pending)})")
+                    bid_text = f"(bid: {bid}) "
                 else:
-                    logger.info(f"{self.id} + Task {task_id} assigned to self - Pending task count: {len(tasklog.ids_pending)})")
+                    bid_text = ""
+
+                if position is not None:
+                    position_text = f"at position {position} "
+                else:
+                    position_text = ""
+
+                logger.info(f"{self.id} + Task {task_id} assigned to self {position_text}{bid_text}- Pending task count: {len(tasklog.ids_pending)})")
+
             elif logger and not add_task_success:
                 logger.info(f"!!! Task {task_id} could not be added to the plan of {self.id} !!!")
 
@@ -184,19 +191,18 @@ class Agent(MaafItem):
             )
 
             if logger and remove_task_success:
-                if motive is None:
-                    logger.info(f"{self.id} - Task {task_id} dropped from task list - Pending task count: {len(tasklog.ids_pending)}")
+                if motive is not None:
+                    motive_text = f"(motive: {motive}) "
                 else:
-                    logger.info(f"{self.id} - Task {task_id} dropped from task list (motive: {motive}) - Pending task count: {len(tasklog.ids_pending)}")
+                    motive_text = ""
+
+                logger.info(f"{self.id} - Task {task_id} dropped from task list {motive_text}- Pending task count: {len(tasklog.ids_pending)}")
 
             elif logger and not remove_task_success:
                 logger.warning(f"{self.id} - Task {task_id} not in task list")
 
         else:
             remove_task_success = True
-
-        # # -> Update the plan with the path from the task log
-        # update_plan_success = self.update_plan(tasklog=tasklog)
 
         return remove_task_success
 

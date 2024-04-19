@@ -26,9 +26,11 @@ from networkx import MultiGraph, Graph, DiGraph
 # Local Imports
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.Singleton import SLogger
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.Singleton import SLogger
 
 ##################################################################################################################
 
@@ -340,6 +342,17 @@ class TaskGraph(MaafItem):
 
             # -> Add found paths to the list
             sequence_paths.append(paths)
+
+        # -> Verify that for each path in the sequence, the one that follows it starts with the same node if it is not None
+        if len(sequence_paths) > 1:
+            for i in range(len(sequence_paths) - 1):
+                if sequence_paths[i] is not None and sequence_paths[i + 1] is not None:
+                    if list(sequence_paths[i]["path"][-1]) != list(sequence_paths[i + 1]["path"][0]):
+
+                        SLogger().info(f"!!! TaskGraph get_sequence_paths failed: Path sequence is not continuous: {list(sequence_paths[i]['path'][-1])} != {list(sequence_paths[i + 1]['path'][0])} !!!"
+                                       f"\nNode sequence: {node_sequence}"
+                                       f"\n{[path['path'] for path in sequence_paths]}\n\n"
+                                       )
 
         return sequence_paths
 

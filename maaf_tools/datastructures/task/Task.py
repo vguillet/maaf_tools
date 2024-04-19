@@ -174,50 +174,9 @@ class Task(MaafItem):
 
         return task_state_change, task_terminated
 
-    # # ============================================================== To
-    # def asdict(self, include_local: bool = False) -> dict:
-    #     """
-    #     Create a dictionary containing the fields of the Task data class instance with their current values.
-    #
-    #     :param include_local: Whether to include the local field in the dictionary.
-    #
-    #     :return: A dictionary with field names as keys and current values.
-    #     """
-    #     try:
-    #         from maaf_tools.datastructures.serialisation import asdict
-    #
-    #     except ImportError:
-    #         from maaf_tools.maaf_tools.datastructures.serialisation import asdict
-    #
-    #     if not include_local:
-    #         fields_exclusion_lst = ["local"]
-    #     else:
-    #         fields_exclusion_lst = []
-    #
-    #     fields_dict = asdict(item=self, fields_exclusion_lst=fields_exclusion_lst)
-    #
-    #     return fields_dict
-    #
-    # # ============================================================== From
-    # @classmethod
-    # def from_dict(cls, task_dict: dict, partial: bool = False) -> "Task":
-    #     """
-    #     Convert a dictionary to a task.
-    #
-    #     :param task_dict: The dictionary representation of the task
-    #     :param partial: Whether to allow creation from a dictionary with missing fields.
-    #
-    #     :return: A task object
-    #     """
-    #     try:
-    #         from maaf_tools.datastructures.serialisation import from_dict
-    #
-    #     except ImportError:
-    #         from maaf_tools.maaf_tools.datastructures.serialisation import from_dict
-    #
-    #     item = from_dict(cls=cls, item_dict=task_dict, partial=partial)
-    #
-    #     return item
+    # ============================================================== To
+
+    # ============================================================== From
 
 
 if __name__ == "__main__":
