@@ -9,7 +9,7 @@ import pandas as pd
 from rclpy.time import Time
 
 
-def graph_to_json(graph, pos) -> dict:
+def graph_to_json(graph, pos, shortest_paths=None) -> dict:
     """
     Convert the graph and the positions to a JSON string.
 
@@ -21,6 +21,9 @@ def graph_to_json(graph, pos) -> dict:
         "graph": nx.node_link_data(graph),
         "pos": {str(k): v for k, v in pos.items()}
     }
+
+    if shortest_paths is not None:
+        graph_json["shortest_paths"] = {str(k): {str(k2): v2 for k2, v2 in v.items()} for k, v in shortest_paths.items()}
 
     return graph_json
 
@@ -49,6 +52,14 @@ def json_to_graph(graph_json: str) -> (nx.Graph, dict):
         "graph": graph,
         "pos": pos
         }
+
+    if "shortest_paths" in data.keys():
+        environment["shortest_paths"] = {eval(k): {eval(k2): v2 for k2, v2 in v.items()} for k, v in data["shortest_paths"].items()}
+
+    # -> Add all other fields from the data that is not graph or pos or env_type
+    for key, value in data.items():
+        if key not in environment.keys():
+            environment[key] = value
 
     return environment
 

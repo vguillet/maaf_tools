@@ -20,7 +20,8 @@ from networkx import MultiGraph
 #     from maaf_tools.maaf_tools.datastructures.serialisation import *
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
-except:
+
+except ImportError:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
