@@ -24,22 +24,22 @@ except:
 
 @dataclass
 class Plan(MaafItem):
-    task_bundle: list[str] = field(default_factory=list)          # List of tasks in order of addition
-    task_sequence: list[str] = field(default_factory=list)        # List of tasks in order of execution
+    task_bundle: list[str] = field(default_factory=list)          # List of tasks ids in order of addition
+    task_sequence: list[str] = field(default_factory=list)        # List of tasks ids in order of execution
 
     def __repr__(self) -> str:
-        plan_str = f"Plan with {len(self.task_sequence)} tasks: "
+        plan_str = ""
 
         for task in self.task_sequence:
             plan_str += f"{task} -> "
 
         if len(self.task_sequence) > 0:
-            return plan_str[:-4]
-        else:
-            return "Empty plan"
+            plan_str = plan_str[:-4]
+
+        return plan_str
 
     def __str__(self) -> str:
-        return self.__repr__()
+        return f"Plan with {len(self.task_sequence)} tasks: {self.__repr__()}"
 
     def __contains__(self, item: str) -> bool:
         return item in self.task_sequence

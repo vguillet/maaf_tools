@@ -357,7 +357,7 @@ class TaskLog(MaafList):
         return tasklog_state_change > 0
 
     # ============================================================== Add
-    def add_task(self, task: dict or item_class or List[dict or item_class]) -> None:
+    def add_task(self, task: dict or item_class or List[dict or item_class]) -> bool or list:
         """
         Add a task to the task log. If the task is a list, add each task to the task log individually recursively.
 
@@ -365,9 +365,13 @@ class TaskLog(MaafList):
         """
         # -> If the task is a list, add each task to the task log individually recursively
         if isinstance(task, list):
+            successes = []
+
             for t in task:
-                self.add_task(t)
-            return
+                success = self.add_task(t)
+                successes.append(success)
+
+            return successes
 
         # -> Add the task to the task log
         if isinstance(task, self.item_class):
@@ -381,6 +385,8 @@ class TaskLog(MaafList):
                 node_for_adding=task.id,
                 node_type="Task"
             )
+
+        return success
 
     def add_path(self,
                  source_node: str,
@@ -479,6 +485,7 @@ if __name__ == "__main__":
     # -> Print task log
     print(tasklog.asdict())
     print(tasklog.clone().asdict())
+    print(tasklog.pretty_table)
 
     # print(tasklog.task_graph)
     #

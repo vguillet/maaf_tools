@@ -125,7 +125,7 @@ class Task(MaafItem):
         # if task is self:
         #     return False, False
 
-        # -> Setup a flag to track if the task status has changed
+        # -> Setup flags to track if the task status has changed ()
         task_state_change = False
         task_terminated = False
 

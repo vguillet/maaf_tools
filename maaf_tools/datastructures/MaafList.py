@@ -6,6 +6,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from abc import ABC, abstractmethod
 import pandas as pd
+from tabulate import tabulate
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
@@ -89,6 +90,15 @@ class MaafList(MaafItem):
         Get a list of item ids in the item log.
         """
         return [item.id for item in self.items]
+
+    # ------------------------------ Prints
+    @property
+    def pretty_table(self) -> str:
+        """
+        Get a pretty table of the list.
+        """
+        table = tabulate(self.asdf(), headers="keys", tablefmt="pretty")
+        return table
 
     # ============================================================== Listeners
     # ------------------------------ Edit
