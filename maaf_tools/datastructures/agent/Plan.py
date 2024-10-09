@@ -3,7 +3,6 @@
 
 from typing import Optional, List
 from dataclasses import dataclass, fields, field
-import networkx as nx
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem

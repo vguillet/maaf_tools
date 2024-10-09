@@ -2,12 +2,9 @@
 ##################################################################################################################
 
 from dataclasses import dataclass, fields, field
-from typing import List, Optional
 from datetime import datetime
-from copy import deepcopy
 import pandas as pd
 import numpy as np
-from pprint import pprint, pformat
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem

@@ -3,7 +3,6 @@
 
 from dataclasses import dataclass, fields, field
 from typing import List, Optional
-from datetime import datetime
 from copy import deepcopy
 
 try:

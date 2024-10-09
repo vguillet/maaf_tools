@@ -7,17 +7,8 @@ from typing import List, Optional, Dict
 from datetime import datetime
 
 # Libs
-import networkx as nx
-from networkx import MultiGraph
 
 # Local Imports
-# try:
-#     from maaf_tools.datastructures.MaafItem import MaafItem
-#     from maaf_tools.datastructures.serialisation import *
-#
-# except:
-#     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
-#     from maaf_tools.maaf_tools.datastructures.serialisation import *
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
 
