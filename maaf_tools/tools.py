@@ -2,9 +2,9 @@
 from math import pi
 from numpy import arctan2, arcsin
 import networkx as nx
-from json import loads, dumps
 import numpy as np
 import pandas as pd
+import orjson
 
 from rclpy.time import Time
 
@@ -173,6 +173,20 @@ def deep_compare(obj1, obj2):
 
     # For other types (e.g., int, float, str), use the equality operator
     return obj1 == obj2
+
+
+def custom_encoder(data):
+    if isinstance(data, np.float64):
+        return float(data)  # Convert to Python float
+    raise TypeError(f"Type {type(data)} not serializable")
+
+
+def dumps(data):
+    return orjson.dumps(data, default=custom_encoder).decode("utf-8")
+
+
+def loads(data):
+    return orjson.loads(data)
 
 
 if __name__ == "__main__":
