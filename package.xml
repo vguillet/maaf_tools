@@ -7,7 +7,6 @@
   <maintainer email="victor.guillet@gmail.com">vguillet</maintainer>
   <license>TODO: License declaration</license>
 
-  <exec_depend>maaf_tools</exec_depend>
   <exec_depend>graph_env</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
