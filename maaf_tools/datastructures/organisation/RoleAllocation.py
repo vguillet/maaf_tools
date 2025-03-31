@@ -27,11 +27,11 @@ class RoleAllocation(dict):
         elif not isinstance(role_allocation, dict) or not isinstance(role_allocation, RoleAllocation):
             raise ValueError("The role allocation must be a dictionary or RoleAllocation object.")
 
+        if not self.check_role_allocation_definition(role_allocation=role_allocation, verbose=1):
+            raise ValueError("The provided role allocation is not valid.")
+
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(role_allocation)
-
-        if not self.validate_role_allocation_structure():
-            raise ValueError("The provided role allocation is not valid.")
 
     # ============================================================== Properties
 
@@ -43,16 +43,18 @@ class RoleAllocation(dict):
         :return: True if the definition is valid, False otherwise.
         """
 
-        valid_wrt_structure = self.validate_role_allocation_structure(verbose=verbose)
+        valid_wrt_structure = self.check_role_allocation_definition(role_allocation=self, verbose=verbose)
 
         valid_wrt_fleet = True
 
         return valid_wrt_structure and valid_wrt_fleet
 
-    def validate_role_allocation_structure(self, verbose: int = 1) -> bool:
+    @staticmethod
+    def check_role_allocation_definition(role_allocation, verbose: int = 1) -> bool:
         """
         Validates the structure of a role allocation definition.
 
+        :param role_allocation: Role allocation definition.
         :param verbose: The verbosity level of the validation output.
         :return: True if the definition is valid, False otherwise.
         """
@@ -60,16 +62,16 @@ class RoleAllocation(dict):
         errors = []
 
         # Step 1: Basic structure check
-        if not isinstance(self, dict):
+        if not isinstance(role_allocation, dict):
             return ["self is not a dictionary"]
 
         # Ensure the required top-level keys are present
         required_keys = {"group_instances", "team"}
-        if not required_keys.issubset(self):
-            errors.append("Missing required top-level keys: " + str(required_keys - self.keys()))
+        if not required_keys.issubset(role_allocation):
+            errors.append("Missing required top-level keys: " + str(required_keys - role_allocation.keys()))
 
         # Step 2: Validate group_instances structure
-        group_instances = self.get("group_instances", [])
+        group_instances = role_allocation.get("group_instances", [])
         instance_to_parent = {}  # Maps instance -> parent for hierarchy traversal
         instance_names = set()  # Set of all defined group instance names
 
@@ -125,7 +127,7 @@ class RoleAllocation(dict):
                     errors.extend(cycle_error)
 
         # Step 5: Validate team member assignments
-        for member in self.get("team", []):
+        for member in role_allocation.get("team", []):
             # Ensure required keys are present
             if not all(k in member for k in ("id", "name", "class", "assignments")):
                 errors.append(f"Missing required keys in team member: {member}")
