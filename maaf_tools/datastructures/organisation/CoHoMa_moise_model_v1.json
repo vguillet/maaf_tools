@@ -1,0 +1,405 @@
+{
+  "structural_specification": {
+    "roles": [
+      {
+        "name": "Agent",
+        "abstract": true,
+        "inherits": null,
+        "skill_requirements": [],
+        "description": ""
+      },
+      {
+        "name": "Auction Participant",
+        "abstract": true,
+        "inherits": "Agent",
+        "skill_requirements": null,
+        "description": "Actor in the coordination auction"
+      },
+      {
+        "name": "Announcer",
+        "abstract": true,
+        "inherits": "Auction Participant",
+        "skill_requirements": null,
+        "description": "Announce new tasks"
+      },
+      {
+        "name": "Ambassador",
+        "abstract": true,
+        "inherits": "Auction Participant",
+        "skill_requirements": null,
+        "description": "Represent the team"
+      },
+      {
+        "name": "P1",
+        "abstract": false,
+        "inherits": "Ambassador",
+        "skill_requirements": null,
+        "description": "Primary ambassador"
+      },
+      {
+        "name": "P2",
+        "abstract": false,
+        "inherits": "Ambassador",
+        "skill_requirements": null,
+        "description": "Secondary ambassador"
+      },
+      {
+        "name": "P3",
+        "abstract": false,
+        "inherits": "Ambassador",
+        "skill_requirements": null,
+        "description": "Tertiary ambassador"
+      },
+      {
+        "name": "Bidder",
+        "abstract": true,
+        "inherits": "Auction Participant",
+        "skill_requirements": null,
+        "description": "Bid in the coordination auction"
+      },
+      {
+        "name": "P4",
+        "abstract": false,
+        "inherits": "Bidder",
+        "skill_requirements": null,
+        "description": "Basic bidder"
+      },
+      {
+        "name": "Operational Agent",
+        "abstract": true,
+        "inherits": "Agent",
+        "skill_requirements": null,
+        "description": "Operational agent"
+      },
+      {
+        "name": "Scout",
+        "abstract": false,
+        "inherits": "Operational Agent",
+        "skill_requirements": [
+          "goto"
+        ],
+        "description": "Perform observation tasks"
+      },
+      {
+        "name": "Monitor",
+        "abstract": false,
+        "inherits": "Operational Agent",
+        "skill_requirements": [
+          "goto"
+        ],
+        "description": "Monitor the environment"
+      },
+      {
+        "name": "Patroller",
+        "abstract": false,
+        "inherits": "Operational Agent",
+        "skill_requirements": [
+          "goto"
+        ],
+        "description": "Patrol the environment"
+      },
+      {
+        "name": "Obstructor",
+        "abstract": true,
+        "inherits": "Operational Agent",
+        "skill_requirements": null,
+        "description": "Block the path"
+      },
+      {
+        "name": "Trapper",
+        "abstract": false,
+        "inherits": "Operational Agent",
+        "skill_requirements": [
+          "trap"
+        ],
+        "description": "Trap the target"
+      },
+      {
+        "name": "Tracker",
+        "abstract": false,
+        "inherits": "Operational Agent",
+        "skill_requirements": [
+          "track"
+        ],
+        "description": "Track the target"
+      },
+      {
+        "name": "Neutraliser",
+        "abstract": false,
+        "inherits": "Operational Agent",
+        "skill_requirements": [
+          "neutralise"
+        ],
+        "description": "Neutralise the target"
+      },
+      {
+        "name": "Operator",
+        "abstract": true,
+        "inherits": "Agent",
+        "skill_requirements": [],
+        "description": ""
+      },
+      {
+        "name": "Tactical Operator",
+        "abstract": false,
+        "inherits": "Operator",
+        "skill_requirements": [],
+        "description": ""
+      },
+      {
+        "name": "Situation Operator",
+        "abstract": false,
+        "inherits": "Operator",
+        "skill_requirements": [],
+        "description": ""
+      },
+      {
+        "name": "Robot Operator",
+        "abstract": false,
+        "inherits": "Operator",
+        "skill_requirements": [],
+        "description": ""
+      }
+    ],
+    "role_relations": [
+      {
+        "source": "Operator",
+        "destination": "Agent",
+        "type": "acquaintance",
+        "scope": "intra"
+      },
+      {
+        "source": "Tactical Operator",
+        "destination": "Agent",
+        "type": "acquaintance",
+        "scope": "inter"
+      },
+      {
+        "source": "Agent",
+        "destination": "Agent",
+        "type": "communication",
+        "scope": "omni"
+      },
+      {
+        "source": "Operator",
+        "destination": "Agent",
+        "type": "authority",
+        "scope": "intra"
+      },
+      {
+        "source": "Tactical Operator",
+        "destination": "Agent",
+        "type": "authority",
+        "scope": "omni"
+      },
+      {
+        "source": "Operator",
+        "destination": "Announcer",
+        "type": "compatible",
+        "scope": "omni"
+      },
+      {
+        "source": "Operator",
+        "destination": "Ambassador",
+        "type": "compatible",
+        "scope": "intra"
+      },
+      {
+        "source": "Tactical Operator",
+        "destination": "Ambassador",
+        "type": "compatible",
+        "scope": "omni"
+      },
+      {
+        "source": "Tactical Operator",
+        "destination": "Auction Participant",
+        "type": "compatible",
+        "scope": "inter"
+      },
+      {
+        "source": "Operational Agent",
+        "destination": "Operational Agent",
+        "type": "compatible",
+        "scope": "intra"
+      },
+      {
+        "source": "Operational Agent",
+        "destination": "Auction Participant",
+        "type": "compatible",
+        "scope": "intra"
+      },
+      {
+        "source": "Auction Participant",
+        "destination": "Auction Participant",
+        "type": "compatible",
+        "scope": "intra"
+      },
+      {
+        "source": "Operational Agent",
+        "destination": "Bidder",
+        "type": "couple",
+        "scope": "inter"
+      },
+      {
+        "source": "Operational Agent",
+        "destination": "Bidder",
+        "type": "couple",
+        "scope": "intra"
+      }
+    ],
+    "groups": [
+      {
+        "name": "DroneSwarm",
+        "role_cardinality": {
+          "Scout": {
+            "min": 3,
+            "max": 3
+          }
+        }
+      },
+      {
+        "name": "SentinelTeam",
+        "subgroups": {
+          "DroneSwarm": {
+            "min": 1,
+            "max": 1
+          }
+        },
+        "role_cardinality": {
+          "P1": {
+            "min": 1,
+            "max": 1
+          },
+          "P2": {
+            "min": 1,
+            "max": 1
+          },
+          "P3": {
+            "min": 1,
+            "max": 1
+          },
+          "Scout": {
+            "min": 3,
+            "max": 4
+          },
+          "Monitor": {
+            "min": 1,
+            "max": 1
+          },
+          "Patroller": {
+            "min": 1,
+            "max": 3
+          },
+          "Situation Operator": {
+            "min": 1,
+            "max": 1
+          }
+        }
+      },
+      {
+        "name": "DefenceTeam",
+        "role_cardinality": {
+          "P1": {
+            "min": 1,
+            "max": 1
+          },
+          "P2": {
+            "min": 1,
+            "max": 1
+          },
+          "P3": {
+            "min": 1,
+            "max": 1
+          },
+          "Patroller": {
+            "min": 2,
+            "max": null
+          },
+          "Obstructor": {
+            "min": 1,
+            "max": null
+          },
+          "Trapper": {
+            "min": 1,
+            "max": null
+          },
+          "Tracker": {
+            "min": 1,
+            "max": null
+          },
+          "Neutraliser": {
+            "min": 1,
+            "max": null
+          },
+          "Robot Operator": {
+            "min": 1,
+            "max": 1
+          }
+        }
+      },
+      {
+        "name": "ScoutingTeam",
+        "role_cardinality": {
+          "P1": {
+            "min": 1,
+            "max": 1
+          },
+          "P2": {
+            "min": 1,
+            "max": 1
+          },
+          "P3": {
+            "min": 1,
+            "max": 1
+          },
+          "Scout": {
+            "min": 2,
+            "max": null
+          },
+          "Tracker": {
+            "min": 1,
+            "max": null
+          },
+          "Neutraliser": {
+            "min": 1,
+            "max": null
+          },
+          "Robot Operator": {
+            "min": 1,
+            "max": 1
+          }
+        }
+      },
+      {
+        "name": "Team",
+        "subgroups": {
+          "SentinelTeam": {
+            "min": 1,
+            "max": 1
+          },
+          "DefenceTeam": {
+            "min": 1,
+            "max": null
+          },
+          "ScoutingTeam": {
+            "min": 1,
+            "max": null
+          }
+        },
+        "role_cardinality": {
+          "Tactical Operator": {
+            "min": 1,
+            "max": 1
+          }
+        }
+      }
+    ]
+  },
+  "functional_specification": {
+    "social_schemes": []
+  },
+  "deontic_specification": {
+    "permissions": [],
+    "obligations": []
+  }
+}

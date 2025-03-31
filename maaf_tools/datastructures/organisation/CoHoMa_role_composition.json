@@ -1,0 +1,240 @@
+{
+    "group_instances": [
+    {
+      "instance": "Team_1",
+      "group_type": "Team"
+    },
+    {
+      "instance": "SentinelTeam_1",
+      "group_type": "SentinelTeam",
+      "parent": "Team_1"
+    },
+    {
+      "instance": "DroneSwarm_1",
+      "group_type": "DroneSwarm",
+      "parent": "SentinelTeam_1"
+    },
+    {
+      "instance": "DefenceTeam_1",
+      "group_type": "DefenceTeam",
+      "parent": "Team_1"
+    },
+    {
+      "instance": "ScoutingTeam_1",
+      "group_type": "ScoutingTeam",
+      "parent": "Team_1"
+    }
+  ],
+
+  "team": [
+    {
+      "agent_id": "operator_0",
+      "name": "Alice",
+      "class": "Human",
+      "assignments": [
+        {
+          "team": "Team",
+          "instance": "Team_1",
+          "roles": [
+            "Tactical Operator",
+            "P1"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "operator_1",
+      "name": "Bob",
+      "class": "Human",
+      "assignments": [
+        {
+          "instance": "SentinelTeam_1",
+          "roles": [
+            "Situation Operator",
+            "Robot Operator",
+            "P1"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "D-1",
+      "name": "large_fixed_wing",
+      "class": "Fixed_wing_drone",
+      "assignments": [
+        {
+          "instance": "SentinelTeam_1",
+          "roles": [
+            "Monitor",
+            "P2"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "DS-1",
+      "name": "small_quadcopter",
+      "class": "DJI mini",
+      "assignments": [
+        {
+          "instance": "DroneSwarm_1",
+          "roles": [
+            "Scout",
+            "Patroller",
+            "P3"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "DS-2",
+      "name": "medium_quadcopter",
+      "class": "DJI mini",
+      "assignments": [
+        {
+          "instance": "DroneSwarm_1",
+          "roles": [
+            "Scout",
+            "Patroller",
+            "P4"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "DS-3",
+      "name": "small_quadcopter",
+      "class": "DJI mini",
+      "assignments": [
+        {
+          "instance": "DroneSwarm_1",
+          "roles": [
+            "Scout",
+            "Patroller",
+            "P4"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "operator_2",
+      "name": "Charlie",
+      "class": "Human",
+      "assignments": [
+        {
+          "instance": "DefenceTeam_1",
+          "roles": [
+            "Robot Operator",
+            "P1"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "D-2",
+      "name": "large_quadcopter",
+      "class": "DJI M600",
+      "assignments": [
+        {
+          "instance": "DefenceTeam_1",
+          "roles": [
+            "Patroller",
+            "Tracker",
+            "Neutraliser",
+            "P4"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "G-1",
+      "name": "medium_ground_robot",
+      "class": "AgilX",
+      "assignments": [
+        {
+          "instance": "DefenceTeam_1",
+          "roles": [
+            "Patroller",
+            "Obstructor",
+            "Trapper",
+            "P2"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "G-3",
+      "name": "robot_dog",
+      "class": "Spot",
+      "assignments": [
+        {
+          "instance": "DefenceTeam_1",
+          "roles": [
+            "Patroller",
+            "Tracker",
+            "Neutraliser",
+            "P3"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "operator_3",
+      "name": "David",
+      "class": "Human",
+      "assignments": [
+        {
+          "instance": "ScoutingTeam_1",
+          "roles": [
+            "Robot Operator",
+            "P1"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "D-3",
+      "name": "large_quadcopter",
+      "class": "DJI M600",
+      "assignments": [
+        {
+          "instance": "ScoutingTeam_1",
+          "roles": [
+            "Scout",
+            "Tracker",
+            "Neutraliser",
+            "P4"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "G-2",
+      "name": "medium_ground_robot",
+      "class": "AgilX",
+      "assignments": [
+        {
+          "instance": "ScoutingTeam_1",
+          "roles": [
+            "Scout",
+            "P3"
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "G-4",
+      "name": "heavy_ground_robot",
+      "class": "Lynx",
+      "assignments": [
+        {
+          "instance": "ScoutingTeam_1",
+          "roles": [
+            "Scout",
+            "P2"
+          ]
+        }
+      ]
+    }
+  ]
+}
