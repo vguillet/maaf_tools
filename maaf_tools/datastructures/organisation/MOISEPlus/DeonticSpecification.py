@@ -4,13 +4,13 @@
 import json
 from pprint import pprint
 import warnings
-from typing import Self
+#from typing import Self
 
 ##################################################################################################################
 
 
 class DeonticSpecification(dict):
-    def __init__(self, deontic_specification: Self or dict or None = None):        # If no specification is provided, use the default template.
+    def __init__(self, deontic_specification: dict or None = None):        # If no specification is provided, use the default template.
         if deontic_specification is None:
             deontic_specification = {
                 "permissions": [],

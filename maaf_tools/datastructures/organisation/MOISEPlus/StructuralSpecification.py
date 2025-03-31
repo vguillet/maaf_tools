@@ -4,7 +4,7 @@
 import json
 from pprint import pprint
 import warnings
-from typing import Self
+#from typing import Self
 
 ##################################################################################################################
 
@@ -13,7 +13,7 @@ SCOPES = ["inter", "intra", "omni"]
 
 
 class StructuralSpecification(dict):
-    def __init__(self, structural_specification: Self or dict or None = None):
+    def __init__(self, structural_specification: dict or None = None):
         # If no specification is provided, use the default template.
         if structural_specification is None:
             structural_specification = {
@@ -30,6 +30,9 @@ class StructuralSpecification(dict):
 
         elif not isinstance(structural_specification, dict) or not isinstance(structural_specification, StructuralSpecification):
             raise ValueError("Structural specification must be a dictionary or StructuralSpecification object.")
+
+        if not self.check_structural_specification_structure(structural_specification=structural_specification, verbose=1):
+            raise ValueError("The provided structural specification is not valid.")
 
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(structural_specification)
@@ -56,9 +59,184 @@ class StructuralSpecification(dict):
         return self["groups"]
 
     # ============================================================== Check
+    @staticmethod
+    def check_structural_specification_structure(structural_specification, verbose: int = 1) -> bool:
+        """
+        Validates the structure of the structural specification.
+
+        :param verbose: The verbosity level of the validation output.
+        :return: True if the definition is valid, False otherwise.
+        """
+        errors = []
+
+        # Step 1: Check top-level keys and their types
+        roles = structural_specification.get("roles")
+        role_relations = structural_specification.get("role_relations")
+        groups = structural_specification.get("groups")
+
+        if not isinstance(roles, list):
+            errors.append("Missing or invalid top-level field 'roles': expected a list.")
+            roles = []
+        if not isinstance(role_relations, list):
+            errors.append("Missing or invalid top-level field 'role_relations': expected a list.")
+            role_relations = []
+        if not isinstance(groups, list):
+            errors.append("Missing or invalid top-level field 'groups': expected a list.")
+            groups = []
+
+        # Step 2: Validate roles
+        role_names = []
+        for i, role in enumerate(roles):
+            if not isinstance(role, dict):
+                errors.append(f"Invalid role at index {i}: expected a dictionary.")
+                continue
+
+            role_id = role.get("name", f"<unnamed role #{i}>")
+            if "name" not in role:
+                errors.append(f"Role at index {i} is missing required field 'name'.")
+            elif not isinstance(role["name"], str):
+                errors.append(f"Invalid 'name' for role at index {i}: expected a string.")
+            else:
+                role_names.append(role["name"])
+
+            if "abstract" not in role:
+                errors.append(f"Role '{role_id}' is missing required field 'abstract'.")
+            elif not isinstance(role["abstract"], bool):
+                errors.append(f"Invalid 'abstract' for role '{role_id}': expected a boolean.")
+
+            if "inherits" not in role:
+                errors.append(f"Role '{role_id}' is missing required field 'inherits'.")
+            elif not (role["inherits"] is None or isinstance(role["inherits"], str)):
+                errors.append(f"Invalid 'inherits' for role '{role_id}': expected a string or None.")
+            elif isinstance(role["inherits"], str) and role["inherits"] not in role_names:
+                errors.append(f"Role '{role_id}' inherits from undefined role '{role['inherits']}'.")
+
+            if "skill_requirements" not in role:
+                errors.append(f"Role '{role_id}' is missing required field 'skill_requirements'.")
+            elif not isinstance(role["skill_requirements"], list):
+                errors.append(f"Invalid 'skill_requirements' for role '{role_id}': expected a list.")
+            else:
+                for skill in role["skill_requirements"]:
+                    if not isinstance(skill, str):
+                        errors.append(
+                            f"Invalid skill in 'skill_requirements' for role '{role_id}': '{skill}' is not a string.")
+
+            if "description" not in role:
+                errors.append(f"Role '{role_id}' is missing required field 'description'.")
+            elif not isinstance(role["description"], str):
+                errors.append(f"Invalid 'description' for role '{role_id}': expected a string.")
+
+        # Check duplicate role names
+        if len(role_names) != len(set(role_names)):
+            duplicates = set(name for name in role_names if role_names.count(name) > 1)
+            errors.append(f"Duplicate role names detected: {duplicates}.")
+
+        # Step 3: Validate role relations
+        for i, relation in enumerate(role_relations):
+            if not isinstance(relation, dict):
+                errors.append(f"Invalid role relation at index {i}: expected a dictionary.")
+                continue
+
+            source = relation.get("source", "<unknown>")
+            destination = relation.get("destination", "<unknown>")
+
+            if "source" not in relation:
+                errors.append(f"Role relation at index {i} is missing required field 'source'.")
+            elif source not in role_names:
+                errors.append(f"Role relation at index {i} has undefined source '{source}'.")
+
+            if "destination" not in relation:
+                errors.append(f"Role relation at index {i} is missing required field 'destination'.")
+            elif destination not in role_names:
+                errors.append(f"Role relation from '{source}' has undefined destination '{destination}'.")
+
+            if "type" not in relation:
+                errors.append(f"Role relation from '{source}' to '{destination}' is missing required field 'type'.")
+            elif relation["type"] not in RELATIONS:
+                errors.append(
+                    f"Invalid 'type' in role relation from '{source}' to '{destination}': expected one of {RELATIONS}.")
+
+            if "scope" not in relation:
+                errors.append(f"Role relation from '{source}' to '{destination}' is missing required field 'scope'.")
+            elif relation["scope"] not in SCOPES:
+                errors.append(
+                    f"Invalid 'scope' in role relation from '{source}' to '{destination}': expected one of {SCOPES}.")
+
+        # Step 4: Validate groups
+        group_names = []
+        for i, group in enumerate(groups):
+            if not isinstance(group, dict):
+                errors.append(f"Invalid group at index {i}: expected a dictionary.")
+                continue
+
+            group_id = group.get("name", f"<unnamed group #{i}>")
+            if "name" not in group:
+                errors.append(f"Group at index {i} is missing required field 'name'.")
+            elif not isinstance(group["name"], str):
+                errors.append(f"Invalid 'name' for group at index {i}: expected a string.")
+            else:
+                group_names.append(group["name"])
+
+            if "role_cardinality" not in group:
+                errors.append(f"Group '{group_id}' is missing required field 'role_cardinality'.")
+            elif not isinstance(group["role_cardinality"], dict):
+                errors.append(f"Invalid 'role_cardinality' for group '{group_id}': expected a dictionary.")
+            else:
+                for role_key, cardinality in group["role_cardinality"].items():
+                    if role_key not in role_names:
+                        errors.append(
+                            f"Group '{group_id}' references undefined role '{role_key}' in 'role_cardinality'.")
+                    if not isinstance(cardinality, dict):
+                        errors.append(
+                            f"Invalid cardinality for role '{role_key}' in group '{group_id}': expected a dictionary.")
+                    else:
+                        min_val = cardinality.get("min")
+                        max_val = cardinality.get("max")
+                        if not isinstance(min_val, int) or min_val < 0:
+                            errors.append(
+                                f"Invalid minimum cardinality for role '{role_key}' in group '{group_id}': {min_val}.")
+                        if max_val is not None:
+                            if not isinstance(max_val, int) or max_val < 0 or max_val < min_val:
+                                errors.append(
+                                    f"Invalid maximum cardinality for role '{role_key}' in group '{group_id}': {max_val}.")
+
+            if "subgroups" in group:
+                if not isinstance(group["subgroups"], dict):
+                    errors.append(f"Invalid 'subgroups' for group '{group_id}': expected a dictionary.")
+                else:
+                    for subgroup_key, cardinality in group["subgroups"].items():
+                        if subgroup_key not in group_names:
+                            errors.append(f"Group '{group_id}' references undefined subgroup '{subgroup_key}'.")
+                        if not isinstance(cardinality, dict):
+                            errors.append(
+                                f"Invalid cardinality for subgroup '{subgroup_key}' in group '{group_id}': expected a dictionary.")
+                        else:
+                            min_val = cardinality.get("min")
+                            max_val = cardinality.get("max")
+                            if not isinstance(min_val, int) or min_val < 0:
+                                errors.append(
+                                    f"Invalid minimum cardinality for subgroup '{subgroup_key}' in group '{group_id}': {min_val}.")
+                            if max_val is not None:
+                                if not isinstance(max_val, int) or max_val < 0 or max_val < min_val:
+                                    errors.append(
+                                        f"Invalid maximum cardinality for subgroup '{subgroup_key}' in group '{group_id}': {max_val}.")
+
+        # Check duplicate group names
+        if len(group_names) != len(set(group_names)):
+            duplicates = set(name for name in group_names if group_names.count(name) > 1)
+            errors.append(f"Duplicate group names detected: {duplicates}.")
+
+        # Report errors
+        if errors and verbose >= 1:
+            print("Errors found in structural specification:")
+            for error in errors:
+                print(f"  - {error}")
+
+        return not errors
+
     def check_agent_role_compatibility(self, agent_skillset: list[str], role: str) -> bool:
         """
-        Check whether an agent (represented by its skillset of skills) is compatible with a given role.
+        Check whether an agent skillset is compatible with a given role.
         Compatibility means the agent's skillset includes all required skills for the role and all its ancestors.
 
         The method looks up the role in the structural specification (self.structural_specification["roles"])
@@ -73,7 +251,7 @@ class StructuralSpecification(dict):
 
         # Retrieve the role definition from the model.
         role_def = next((r for r in self["roles"] if r["name"] == role), None)
-        print(self["roles"])
+
         if role_def is None:
             raise ValueError(f"Role '{role}' is not defined in the model.")
 
@@ -192,7 +370,12 @@ class StructuralSpecification(dict):
         #     verbose=verbose
         # )
 
-        valid_wrt_agents_skillsets = True
+        valid_wrt_agents_skillsets = self.check_role_allocation_against_skillsets(
+            role_allocation=role_allocation,
+            fleet=fleet,
+            stop_at_first_error=stop_at_first_error,
+            verbose=verbose
+        )
 
         # -> Check role allocation against model
         valid_wrt_structural_model = self.check_role_allocation_against_model(
@@ -219,22 +402,35 @@ class StructuralSpecification(dict):
         """
         errors = []
 
-        # --- Step 1: Process team assignments ---
-        agents_defined = {agent["agent_id"] for agent in fleet}
-        roles_defined = {role["name"] for role in self.roles}
-        assignments_list = []
+        # ... for every agent in the fleet
+        for agent in fleet:
+            # Get the agent's assigned roles
+            assigned_roles = []
 
-        for agent in role_allocation.get("team", []):
-            agent_id = agent.get("agent_id", "unknown")
-            if agent_id not in agents_defined:
-                err = f"Agent '{agent_id}' is not defined in the fleet."
-                errors.append(err)
-                if stop_at_first_error:
-                    return False
-                continue
+            for agent_assignment in role_allocation["team"]:
+                if agent_assignment["id"] == agent.id:
+                    for assignment in agent_assignment["assignments"]:
+                        assigned_roles += assignment["roles"]
 
+            assigned_roles = set(assigned_roles)
 
+            # -> Check every assigned role skill requirements against the agent's skillset
+            for role in assigned_roles:
+                if not self.check_agent_role_compatibility(agent.skillset, role):
+                    err = f"Agent '{agent.id}' is not compatible with role '{role}'."
+                    errors.append(err)
+                    if stop_at_first_error:
+                        return False
 
+        # --- Final reporting ---
+        if errors:
+            if verbose >= 1:
+                print("Errors found in role allocation:")
+                for err in errors:
+                    print("  -", err)
+            return False
+        else:
+            return True
 
     def check_role_allocation_against_model(self, role_allocation: dict, stop_at_first_error: bool = False, verbose: int = 1) -> bool:
         """
@@ -285,12 +481,11 @@ class StructuralSpecification(dict):
                 parent_to_children.setdefault(parent, []).append(inst)
 
         # --- Step 1: Process team assignments ---
-        teams_defined = {info["group_type"] for info in instance_map.values()}
         roles_defined = {role["name"] for role in self.roles}
         assignments_list = []  # list of tuples: (agent_id, instance, role)
 
         for agent in role_allocation.get("team", []):
-            agent_id = agent.get("agent_id", "unknown")
+            agent_id = agent.get("id", "unknown")
             for assignment in agent.get("assignments", []):
                 inst = assignment.get("instance")
                 if inst not in instance_map:

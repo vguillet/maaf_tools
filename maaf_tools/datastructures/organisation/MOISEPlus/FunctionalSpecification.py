@@ -4,13 +4,13 @@
 import json
 from pprint import pprint
 import warnings
-from typing import Self
+#from typing import Self
 
 ##################################################################################################################
 
 
 class FunctionalSpecification(dict):
-    def __init__(self, functional_specification: Self or dict or None = None):
+    def __init__(self, functional_specification: dict or None = None):
         # If no specification is provided, use the default template.
         if functional_specification is None:
             functional_specification = {

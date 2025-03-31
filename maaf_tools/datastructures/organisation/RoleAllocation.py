@@ -4,13 +4,13 @@
 import json
 from pprint import pprint
 import warnings
-from typing import Self
+#from typing import Self
 
 ##################################################################################################################
 
 
 class RoleAllocation(dict):
-    def __init__(self, role_allocation: Self or dict or None = None):
+    def __init__(self, role_allocation: dict or None = None):
         # If no specification is provided, use the default template.
         if role_allocation is None:
             role_allocation = {
@@ -30,13 +30,26 @@ class RoleAllocation(dict):
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(role_allocation)
 
-        if not self.validate_role_allocation():
+        if not self.validate_role_allocation_structure():
             raise ValueError("The provided role allocation is not valid.")
 
     # ============================================================== Properties
 
     # ============================================================== Check
-    def validate_role_allocation(self, verbose: int = 1) -> bool:
+    def validate_role_allocation(self, fleet, verbose: int = 1) -> bool:
+        """
+        Validates the role allocation definition.
+
+        :return: True if the definition is valid, False otherwise.
+        """
+
+        valid_wrt_structure = self.validate_role_allocation_structure(verbose=verbose)
+
+        valid_wrt_fleet = True
+
+        return valid_wrt_structure and valid_wrt_fleet
+
+    def validate_role_allocation_structure(self, verbose: int = 1) -> bool:
         """
         Validates the structure of a role allocation definition.
 
@@ -114,7 +127,7 @@ class RoleAllocation(dict):
         # Step 5: Validate team member assignments
         for member in self.get("team", []):
             # Ensure required keys are present
-            if not all(k in member for k in ("agent_id", "name", "class", "assignments")):
+            if not all(k in member for k in ("id", "name", "class", "assignments")):
                 errors.append(f"Missing required keys in team member: {member}")
                 continue
 
@@ -145,7 +158,7 @@ class RoleAllocation(dict):
 
                 if duplicates:
                     errors.append(
-                        f"Duplicate role(s) in assignment for agent '{member['agent_id']}' in instance '{instance}': {', '.join(duplicates)}"
+                        f"Duplicate role(s) in assignment for agent '{member['id']}' in instance '{instance}': {', '.join(duplicates)}"
                     )
 
                 # Check for exactly one priority role (P1–P4)
@@ -171,4 +184,42 @@ class RoleAllocation(dict):
     # ============================================================== Remove
 
     # ============================================================== Serialization / Parsing
+    def to_json(self) -> str:
+        """
+        Serializes the role allocation to a JSON string.
 
+        :return: JSON string representation of the role allocation.
+        """
+        return json.dumps(self, indent=4)
+
+    @classmethod
+    def from_json(cls, json_str: str):
+        """
+        Deserializes a JSON string into a RoleAllocation object.
+
+        :param json_str: JSON string representation of the role allocation.
+        :return: RoleAllocation object.
+        """
+        data = json.loads(json_str)
+        return cls(data)
+
+    def save_to_file(self, filename: str):
+        """
+        Saves the role allocation to a file in JSON format.
+
+        :param filename: The name of the file to save the role allocation to.
+        """
+        with open(filename, 'w') as file:
+            json.dump(self, file, indent=4)
+
+    @classmethod
+    def load_from_file(cls, filename: str):
+        """
+        Loads a role allocation from a file in JSON format.
+
+        :param filename: The name of the file to load the role allocation from.
+        :return: RoleAllocation object.
+        """
+        with open(filename, 'r') as file:
+            data = json.load(file)
+        return cls(data)

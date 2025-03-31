@@ -4,16 +4,22 @@
 import json
 from pprint import pprint
 
-from StructuralSpecification import StructuralSpecification
-from FunctionalSpecification import FunctionalSpecification
-from DeonticSpecification import DeonticSpecification
+try:
+    from maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
+    from maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
+    from maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
+
+except:
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
 
 ##################################################################################################################
 
 
 class MoiseModel:
     """
-    A class representing a MOISE+ model for specifying multiagent system organizations.
+    A class representing a MOISEPlus model for specifying multiagent system organizations.
 
     The model is divided into three main specifications:
       - Structural Specification: Contains roles, role relations, and groups.
@@ -36,16 +42,16 @@ class MoiseModel:
         self.deontic_specification = DeonticSpecification(deontic_specification)
 
     def __repr__(self):
-        """Returns a string representation of the MOISE+ model."""
+        """Returns a string representation of the MOISEPlus model."""
 
-        string = f"MOISE+ Model with {len(self.structural_specification['roles'])} roles, " \
+        string = f"MOISEPlus Model with {len(self.structural_specification['roles'])} roles, " \
                f"{len(self.structural_specification['role_relations'])} role relations, " \
                f"and {len(self.structural_specification['groups'])} groups"
 
         return string
 
     def __str__(self):
-        """Returns a string representation of the MOISE+ model."""
+        """Returns a string representation of the MOISEPlus model."""
         return self.__repr__()
 
     # ============================================================== Properties
@@ -62,7 +68,7 @@ class MoiseModel:
 
     # ============================================================== Serialization / Parsing
     def to_dict(self) -> dict:
-        """Returns the MOISE+ model as a dictionary."""
+        """Returns the MOISEPlus model as a dictionary."""
         return {
             "structural_specification": self.structural_specification,
             "functional_specification": self.functional_specification,
@@ -71,7 +77,7 @@ class MoiseModel:
 
     def to_json(self, indent=2):
         """
-        Serializes the MOISE+ model to a JSON string.
+        Serializes the MOISEPlus model to a JSON string.
 
         :return: A JSON-formatted string representation of the model.
         """
@@ -104,7 +110,7 @@ class MoiseModel:
 
     def save_to_file(self, filename: str):
         """
-        Saves the MOISE+ model to a file in JSON format.
+        Saves the MOISEPlus model to a file in JSON format.
 
         :param filename: The name of the file.
         """
@@ -114,7 +120,7 @@ class MoiseModel:
     @classmethod
     def load_from_file(cls, filename):
         """
-        Loads a MOISE+ model from a JSON file.
+        Loads a MOISEPlus model from a JSON file.
 
         :param filename: The name of the file to load.
 
@@ -126,7 +132,7 @@ class MoiseModel:
 
     def plot(self):
         """
-        Plots an interactive view of the MOISE+ model showing:
+        Plots an interactive view of the MOISEPlus model showing:
           - The roles hierarchy at the top, drawn as a top-down tree with reversed arrows
             (arrows from child to parent, empty arrowheads).
           - The groups hierarchy at the bottom, drawn as a bottom-up tree
@@ -303,7 +309,7 @@ class MoiseModel:
 
 # -------------------- Example Usage --------------------
 if __name__ == "__main__":
-    # Create a new MOISE+ model
+    # Create a new MOISEPlus model
     model = MoiseModel()
 
     # --- Structural Specification ---

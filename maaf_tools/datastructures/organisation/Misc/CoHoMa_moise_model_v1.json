@@ -17,7 +17,7 @@
       },
       {
         "name": "Announcer",
-        "abstract": true,
+        "abstract": false,
         "inherits": "Auction Participant",
         "skill_requirements": null,
         "description": "Announce new tasks"

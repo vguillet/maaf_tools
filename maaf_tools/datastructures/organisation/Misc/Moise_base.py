@@ -12,7 +12,7 @@ SCOPES = ["inter", "intra", "omni"]
 
 class MoiseModel:
     """
-    A class representing a MOISE+ model for specifying multiagent system organizations.
+    A class representing a MOISEPlus model for specifying multiagent system organizations.
 
     The model is divided into three main specifications:
       - Structural Specification: Contains roles, role relations, and groups.
@@ -39,7 +39,7 @@ class MoiseModel:
         }
 
     def __str__(self):
-        """Returns a string representation (JSON format) of the MOISE+ model."""
+        """Returns a string representation (JSON format) of the MOISEPlus model."""
         return self.to_json(indent=2)
 
     # ============================================================== Properties
@@ -375,7 +375,7 @@ class MoiseModel:
     # ============================================================== Serialization / Parsing
 
     def to_dict(self):
-        """Returns the MOISE+ model as a dictionary."""
+        """Returns the MOISEPlus model as a dictionary."""
         return {
             "structural_specification": self.structural_specification,
             "functional_specification": self.functional_specification,
@@ -384,7 +384,7 @@ class MoiseModel:
 
     def to_json(self, indent=2):
         """
-        Serializes the MOISE+ model to a JSON string.
+        Serializes the MOISEPlus model to a JSON string.
 
         Args:
             indent (int): The indent level for pretty-printing.
@@ -428,7 +428,7 @@ class MoiseModel:
 
     def save_to_file(self, filename):
         """
-        Saves the MOISE+ model to a file in JSON format.
+        Saves the MOISEPlus model to a file in JSON format.
 
         Args:
             filename (str): The name of the file to save the model.
@@ -439,7 +439,7 @@ class MoiseModel:
     @classmethod
     def load_from_file(cls, filename):
         """
-        Loads a MOISE+ model from a JSON file.
+        Loads a MOISEPlus model from a JSON file.
 
         Args:
             filename (str): The name of the file to load the model from.
@@ -453,7 +453,7 @@ class MoiseModel:
 
     def plot(self):
         """
-        Plots an interactive view of the MOISE+ model showing:
+        Plots an interactive view of the MOISEPlus model showing:
           - The roles hierarchy at the top, drawn as a top-down tree with reversed arrows
             (arrows from child to parent, empty arrowheads).
           - The groups hierarchy at the bottom, drawn as a bottom-up tree
@@ -628,7 +628,7 @@ class MoiseModel:
 
 # -------------------- Example Usage --------------------
 if __name__ == "__main__":
-    # Create a new MOISE+ model
+    # Create a new MOISEPlus model
     model = MoiseModel()
 
     # --- Structural Specification ---
@@ -637,7 +637,7 @@ if __name__ == "__main__":
 
     # Coordination
     model.add_role(name="Auction Participant", abstract=True, inherits="Agent")
-    model.add_role(name="Announcer", abstract=True, inherits="Auction Participant")
+    model.add_role(name="Announcer", abstract=False, inherits="Auction Participant")
     model.add_role(name="Ambassador", abstract=True, inherits="Auction Participant")
     model.add_role(name="P1", abstract=False, inherits="Ambassador")
     model.add_role(name="P2", abstract=False, inherits="Ambassador")

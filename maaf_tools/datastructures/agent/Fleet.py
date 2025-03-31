@@ -288,6 +288,55 @@ class Fleet(MaafList):
         else:
             self.remove_item_by_id(item_id=agent)
 
+    # ============================================================== Serialization / Parsing
+    @classmethod
+    def from_config_files(
+            cls,
+            fleet_agents: list,
+            agent_classes: dict
+        ) -> "Fleet":
+        """
+        Create a Fleet object from configuration files.
+
+        :param fleet_agents: The fleet agents configuration file.
+        :param agent_classes: The agent classes configuration file.
+
+        :return: A Fleet object.
+        """
+
+        fleet = cls()
+
+        # -> For all agents in the fleet ...
+        for agent in fleet_agents:
+            # -> Create an agent object from the configuration file
+            agent = Agent(
+                id=agent["id"],
+                name=agent["name"],
+                agent_class=agent["class"],
+                skillset=agent_classes[agent["class"]]["skillset"],
+                specs=agent["specs"],
+
+                hierarchy_level=0,
+                affiliations=[],
+                state=AgentState(
+                    agent_id=agent["id"],
+                    _timestamp=0,
+                    battery_level=100,
+                    stuck=False,
+                    x=0,
+                    y=0,
+                    z=0,
+                    u=0,
+                    v=0,
+                    w=0
+                ),
+                plan=Plan(),
+            )
+
+            # -> Add the agent to the fleet
+            fleet.add_agent(agent=agent)
+
+        return fleet
 
 if "__main__" == __name__:
     import pandas as pd
