@@ -26,12 +26,18 @@ class DeonticSpecification(dict):
         elif not isinstance(deontic_specification, dict) or not isinstance(deontic_specification, DeonticSpecification):
             raise ValueError("The deontic specification must be a dictionary or DeonticSpecification object.")
 
+        if not self.check_specification_definition(deontic_specification=deontic_specification, verbose=1):
+            raise ValueError("The provided deontic specification is not valid")
+
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(deontic_specification)
 
     # ============================================================== Properties
 
     # ============================================================== Check
+    @staticmethod
+    def check_specification_definition(deontic_specification, verbose: int = 1) -> bool:
+        return True
 
     # ============================================================== Get
 

@@ -31,7 +31,7 @@ class StructuralSpecification(dict):
         elif not isinstance(structural_specification, dict) or not isinstance(structural_specification, StructuralSpecification):
             raise ValueError("Structural specification must be a dictionary or StructuralSpecification object.")
 
-        if not self.check_structural_specification_structure(structural_specification=structural_specification, verbose=1):
+        if not self.check_specification_definition(structural_specification=structural_specification, verbose=1):
             raise ValueError("The provided structural specification is not valid.")
 
         # Initialize the underlying dict with the provided or default dictionary.
@@ -60,7 +60,7 @@ class StructuralSpecification(dict):
 
     # ============================================================== Check
     @staticmethod
-    def check_structural_specification_structure(structural_specification, verbose: int = 1) -> bool:
+    def check_specification_definition(structural_specification, verbose: int = 1) -> bool:
         """
         Validates the structure of the structural specification.
 

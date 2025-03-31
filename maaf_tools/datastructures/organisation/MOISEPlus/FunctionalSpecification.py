@@ -26,12 +26,18 @@ class FunctionalSpecification(dict):
         elif not isinstance(functional_specification, dict) or not isinstance(functional_specification, FunctionalSpecification):
             raise ValueError("The functional specification must be a dictionary or FunctionalSpecification object.")
 
+        if not self.check_specification_definition(functional_specification=functional_specification, verbose=1):
+            raise ValueError("The provided functional specification is not valid")
+
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(functional_specification)
 
     # ============================================================== Properties
 
     # ============================================================== Check
+    @staticmethod
+    def check_specification_definition(functional_specification, verbose: int = 1) -> bool:
+        return True
 
     # ============================================================== Get
 
