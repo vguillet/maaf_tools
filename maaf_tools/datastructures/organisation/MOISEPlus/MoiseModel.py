@@ -5,11 +5,13 @@ import json
 from pprint import pprint
 
 try:
+    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
     from maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
     from maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
     from maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
 
 except:
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
@@ -17,7 +19,7 @@ except:
 ##################################################################################################################
 
 
-class MoiseModel:
+class MoiseModel(MoiseComponent):
     """
     A class representing a MOISEPlus model for specifying multiagent system organizations.
 
@@ -31,15 +33,42 @@ class MoiseModel:
     """
 
     def __init__(self,
+                 data: dict or None = None,
                  structural_specification: StructuralSpecification or dict or None = None,
                  functional_specification: FunctionalSpecification or dict or None = None,
                  deontic_specification: DeonticSpecification or dict or None = None
                  ):
+        """
+        Initializes the MOISEPlus model.
+        :param data: A dictionary containing the model data. If provided, it will override the other parameters.
+
+        :param data:
+        :param structural_specification:
+        :param functional_specification:
+        :param deontic_specification:
+        """
+
+        if data is not None:
+            if not isinstance(data, dict):
+                raise ValueError("The data must be a dictionary.")
+            structural_specification = data.get("structural_specification", None)
+            functional_specification = data.get("functional_specification", None)
+            deontic_specification = data.get("deontic_specification", None)
 
         # -> Initialize specifications
         self.structural_specification = StructuralSpecification(structural_specification)
         self.functional_specification = FunctionalSpecification(functional_specification)
         self.deontic_specification = DeonticSpecification(deontic_specification)
+
+        # -> Setup cross-references
+        self.structural_specification.functional_specification = self.functional_specification
+        self.structural_specification.deontic_specification = self.deontic_specification
+
+        self.functional_specification.structural_specification = self.structural_specification
+        self.functional_specification.deontic_specification = self.deontic_specification
+
+        self.deontic_specification.structural_specification = self.structural_specification
+        self.deontic_specification.functional_specification = self.functional_specification
 
     def __repr__(self):
         """Returns a string representation of the MOISEPlus model."""
@@ -67,68 +96,13 @@ class MoiseModel:
     # ============================================================== Remove
 
     # ============================================================== Serialization / Parsing
-    def to_dict(self) -> dict:
+    def asdict(self) -> dict:
         """Returns the MOISEPlus model as a dictionary."""
         return {
             "structural_specification": self.structural_specification,
             "functional_specification": self.functional_specification,
             "deontic_specification": self.deontic_specification
         }
-
-    def to_json(self, indent=2):
-        """
-        Serializes the MOISEPlus model to a JSON string.
-
-        :return: A JSON-formatted string representation of the model.
-        """
-        return json.dumps(self.to_dict(), indent=indent)
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        """
-        Creates a MoiseModel instance from a dictionary.
-
-        :return: A new instance of MoiseModel.
-        """
-        #TODO: Add logic for checking input data format
-        return cls(
-            structural_specification=data.get("structural_specification",
-                                              {"roles": [], "role_relations": [], "groups": []}),
-            functional_specification=data.get("functional_specification", {"social_schemes": []}),
-            deontic_specification=data.get("deontic_specification", {"permissions": [], "obligations": []})
-        )
-
-    @classmethod
-    def from_json(cls, json_str):
-        """
-        Creates a MoiseModel instance from a JSON string.
-
-        :return: A new instance of MoiseModel.
-        """
-        data = json.loads(json_str)
-        return cls.from_dict(data)
-
-    def save_to_file(self, filename: str):
-        """
-        Saves the MOISEPlus model to a file in JSON format.
-
-        :param filename: The name of the file.
-        """
-        with open(filename, "w") as f:
-            f.write(self.to_json(indent=2))
-
-    @classmethod
-    def load_from_file(cls, filename):
-        """
-        Loads a MOISEPlus model from a JSON file.
-
-        :param filename: The name of the file to load.
-
-        :return: MoiseModel: A new instance of MoiseModel.
-        """
-        with open(filename, "r") as f:
-            data = json.load(f)
-        return cls.from_dict(data)
 
     def plot(self):
         """

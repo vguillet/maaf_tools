@@ -83,7 +83,7 @@ class Organisation:
                 self.__moise_model = moise_model
 
             elif isinstance(moise_model, dict):
-                self.__moise_model = MoiseModel().from_dict(moise_model)
+                self.__moise_model = MoiseModel(moise_model)
 
             else:
                 raise ValueError("Invalid Moise Model format. Must be either a MoiseModel instance or a dictionary.")
@@ -213,7 +213,7 @@ class Organisation:
     def to_dict(self) -> dict:
         """Returns a dictionary representation of the team."""
         return {
-            "moise_model": self.moise_model.to_dict(),
+            "moise_model": self.moise_model.asdict(),
             "role_allocation": self.role_allocation
         }
 
@@ -234,7 +234,7 @@ class Organisation:
         """
 
         return cls(
-            moise_model=MoiseModel().from_dict(data["moise_model"]),
+            moise_model=MoiseModel(data["moise_model"]),
             role_allocation=data["role_allocation"]
         )
 
@@ -252,7 +252,10 @@ class Organisation:
                      filename: str,
                      organisation: bool = True,
                      role_allocation: bool = False,
-                     model: bool = False
+                     model: bool = False,
+                     structural_specification: bool = False,
+                     functional_specification: bool = False,
+                     deontic_specification: bool = False
                      ):
         """
         Saves the team to a file. Also saves the role allocation and model separately if specified.
@@ -261,6 +264,9 @@ class Organisation:
         :param organisation: If True, saves the entire organisation as a single JSON file.
         :param role_allocation: If True, saves the role allocation separately.
         :param model: If True, saves the model separately.
+        :param structural_specification: If True, saves the structural specification separately.
+        :param functional_specification: If True, saves the functional specification separately.
+        :param deontic_specification: If True, saves the deontic specification separately.
         """
 
         if not organisation and not role_allocation and not model:
@@ -278,6 +284,18 @@ class Organisation:
             model_filename = filename.replace(".json", "_moise+_model.json")
             self.moise_model.save_to_file(model_filename)
 
+        if structural_specification:
+            structural_specification_filename = filename.replace(".json", "_structural_specification.json")
+            self.moise_model.structural_specification.save_to_file(structural_specification_filename)
+
+        if functional_specification:
+            functional_specification_filename = filename.replace(".json", "_functional_specification.json")
+            self.moise_model.functional_specification.save_to_file(functional_specification_filename)
+
+        if deontic_specification:
+            deontic_specification_filename = filename.replace(".json", "_deontic_specification.json")
+            self.moise_model.deontic_specification.save_to_file(deontic_specification_filename)
+
     @classmethod
     def load_from_file(cls, filename: str):
         """
@@ -291,8 +309,24 @@ class Organisation:
 
 if __name__ == "__main__":
     # -> Load moise+ model json
-    with open("icare_alloc_config/icare_alloc_config/CoHoMa_moise+_model.json", "r") as file:
-        model = json.load(file)
+    #with open("icare_alloc_config/icare_alloc_config/CoHoMa_moise+_model.json", "r") as file:
+    #    model = json.load(file)
+
+    # -> Load Moise+ model components
+    with open("icare_alloc_config/icare_alloc_config/moise_deontic_specification.json", "r") as file:
+        deontic_specification = json.load(file)
+
+    with open("icare_alloc_config/icare_alloc_config/moise_functional_specification.json", "r") as file:
+        functional_specification = json.load(file)
+
+    with open("icare_alloc_config/icare_alloc_config/moise_structural_specification.json", "r") as file:
+        structural_specification = json.load(file)
+
+    model = MoiseModel(
+        deontic_specification=deontic_specification,
+        functional_specification=functional_specification,
+        structural_specification=structural_specification
+    )
 
     # -> Load team compo json
     with open("icare_alloc_config/icare_alloc_config/fleet_role_allocation.json", "r") as file:
@@ -322,14 +356,17 @@ if __name__ == "__main__":
     organisation_model.save_to_file(
         filename="icare_alloc_config/icare_alloc_config/__CoHoMa_organisation_model_v1.json",
         organisation=True,
-        role_allocation=False,
-        model=False
+        role_allocation=True,
+        model=True,
+        structural_specification=True,
+        functional_specification=True,
+        deontic_specification=True
     )
 
     with open("icare_alloc_config/icare_alloc_config/__CoHoMa_organisation_model_v1.json", "r") as file:
         model = json.load(file)
 
-    organisation_model = Organisation().from_dict(data=model)
+    organisation_model = Organisation.from_dict(data=model)
     #organisation_model.plot_team_structure()
 
     # print(organisation_model)

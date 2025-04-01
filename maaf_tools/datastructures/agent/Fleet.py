@@ -304,6 +304,8 @@ class Fleet(MaafList):
         :return: A Fleet object.
         """
 
+        # TODO: Add logic for checking if the config files are correctly formatted
+
         fleet = cls()
 
         # -> For all agents in the fleet ...

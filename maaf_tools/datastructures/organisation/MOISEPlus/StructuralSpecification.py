@@ -6,14 +6,24 @@ from pprint import pprint
 import warnings
 #from typing import Self
 
+try:
+    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+
+except:
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+
 ##################################################################################################################
 
 RELATIONS = ["acquaintance", "communication", "authority", "compatible", "couple"]
 SCOPES = ["inter", "intra", "omni"]
 
 
-class StructuralSpecification(dict):
-    def __init__(self, structural_specification: dict or None = None):
+class StructuralSpecification(dict, MoiseComponent):
+    def __init__(self,
+                 structural_specification: dict or None = None,
+                 functional_specification = None,
+                 deontic_specification = None
+                 ):
         # If no specification is provided, use the default template.
         if structural_specification is None:
             structural_specification = {
@@ -37,7 +47,33 @@ class StructuralSpecification(dict):
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(structural_specification)
 
+        # -> Initialize the functional and deontic specifications if provided.
+        self.__functional_specification = functional_specification
+        self.__deontic_specification = deontic_specification
+
     # ============================================================== Properties
+    @property
+    def functional_specification(self):
+        if self.__functional_specification is None:
+            warnings.warn("Functional specification is not set.")
+            return None
+        return self.__functional_specification
+
+    @functional_specification.setter
+    def functional_specification(self, functional_specification):
+        self.__functional_specification = functional_specification
+
+    @property
+    def deontic_specification(self):
+        if self.__deontic_specification is None:
+            warnings.warn("Deontic specification is not set.")
+            return None
+        return self.__deontic_specification
+
+    @deontic_specification.setter
+    def deontic_specification(self, deontic_specification):
+        self.__deontic_specification = deontic_specification
+
     @property
     def roles(self) -> list:
         """Returns the list of roles in the structural specification."""
@@ -110,16 +146,6 @@ class StructuralSpecification(dict):
                 errors.append(f"Invalid 'inherits' for role '{role_id}': expected a string or None.")
             elif isinstance(role["inherits"], str) and role["inherits"] not in role_names:
                 errors.append(f"Role '{role_id}' inherits from undefined role '{role['inherits']}'.")
-
-            if "skill_requirements" not in role:
-                errors.append(f"Role '{role_id}' is missing required field 'skill_requirements'.")
-            elif not isinstance(role["skill_requirements"], list):
-                errors.append(f"Invalid 'skill_requirements' for role '{role_id}': expected a list.")
-            else:
-                for skill in role["skill_requirements"]:
-                    if not isinstance(skill, str):
-                        errors.append(
-                            f"Invalid skill in 'skill_requirements' for role '{role_id}': '{skill}' is not a string.")
 
             if "description" not in role:
                 errors.append(f"Role '{role_id}' is missing required field 'description'.")
@@ -256,7 +282,7 @@ class StructuralSpecification(dict):
             raise ValueError(f"Role '{role}' is not defined in the model.")
 
         # Get the role's required skills (treating None as an empty list).
-        required_skills = role_def.get("skill_requirements") or []
+        required_skills = self.deontic_specification.get_role_skill_requirements(role=role)
 
         # Check if all required skills for the role are in the agent's killset.
         for skill in required_skills:
@@ -918,3 +944,11 @@ class StructuralSpecification(dict):
                 self["groups"].remove(group)
                 return True
         return False
+
+    # ============================================================== Serialization / Parsing
+    def asdict(self) -> dict:
+        """
+        Returns the structural specification as a dictionary.
+        """
+        return self
+

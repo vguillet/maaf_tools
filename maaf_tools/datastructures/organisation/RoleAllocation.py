@@ -6,10 +6,17 @@ from pprint import pprint
 import warnings
 #from typing import Self
 
+try:
+    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+
+except:
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+
+
 ##################################################################################################################
 
 
-class RoleAllocation(dict):
+class RoleAllocation(dict, MoiseComponent):
     def __init__(self, role_allocation: dict or None = None):
         # If no specification is provided, use the default template.
         if role_allocation is None:
@@ -163,11 +170,6 @@ class RoleAllocation(dict):
                         f"Duplicate role(s) in assignment for agent '{member['id']}' in instance '{instance}': {', '.join(duplicates)}"
                     )
 
-                # Check for exactly one priority role (P1–P4)
-                priority_roles = [r for r in roles if r in {"P1", "P2", "P3", "P4"}]
-                if len(priority_roles) != 1:
-                    errors.append(f"Assignment must have exactly one priority role (P1–P4): {assignment}")
-
         # Step 6: Return result
         if errors:
             if verbose >= 1:
@@ -186,13 +188,7 @@ class RoleAllocation(dict):
     # ============================================================== Remove
 
     # ============================================================== Serialization / Parsing
-    def to_json(self) -> str:
-        """
-        Serializes the role allocation to a JSON string.
 
-        :return: JSON string representation of the role allocation.
-        """
-        return json.dumps(self, indent=4)
 
     @classmethod
     def from_json(cls, json_str: str):
@@ -203,25 +199,4 @@ class RoleAllocation(dict):
         :return: RoleAllocation object.
         """
         data = json.loads(json_str)
-        return cls(data)
-
-    def save_to_file(self, filename: str):
-        """
-        Saves the role allocation to a file in JSON format.
-
-        :param filename: The name of the file to save the role allocation to.
-        """
-        with open(filename, 'w') as file:
-            json.dump(self, file, indent=4)
-
-    @classmethod
-    def load_from_file(cls, filename: str):
-        """
-        Loads a role allocation from a file in JSON format.
-
-        :param filename: The name of the file to load the role allocation from.
-        :return: RoleAllocation object.
-        """
-        with open(filename, 'r') as file:
-            data = json.load(file)
         return cls(data)
