@@ -7,16 +7,16 @@ import warnings
 #from typing import Self
 
 try:
-    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.datastructures.MaafItem import MaafItem
 
 except:
-    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 
 ##################################################################################################################
 
 
-class RoleAllocation(dict, MoiseComponent):
+class RoleAllocation(dict, MaafItem):
     def __init__(self, role_allocation: dict or None = None):
         # If no specification is provided, use the default template.
         if role_allocation is None:
@@ -180,6 +180,33 @@ class RoleAllocation(dict, MoiseComponent):
         return True
 
     # ============================================================== Get
+    def get_group_affiliations(self, agent_id: str) -> list:
+        """
+        Get the group affiliations for a specific agent ID.
+
+        :param agent_id: The ID of the agent.
+        :return: List of group affiliations.
+        """
+        group_affiliations = []
+        for member in self.get("team", []):
+            if member["id"] == agent_id:
+                for assignment in member["assignments"]:
+                    group_affiliations.append(assignment["instance"])
+        return group_affiliations
+
+    def get_roles(self, agent_id: str) -> list:
+        """
+        Get the roles for a specific agent ID.
+
+        :param agent_id: The ID of the agent.
+        :return: List of roles.
+        """
+        roles = []
+        for member in self.get("team", []):
+            if member["id"] == agent_id:
+                for assignment in member["assignments"]:
+                    roles.extend(assignment["roles"])
+        return roles
 
     # ============================================================== Set
 
@@ -188,15 +215,3 @@ class RoleAllocation(dict, MoiseComponent):
     # ============================================================== Remove
 
     # ============================================================== Serialization / Parsing
-
-
-    @classmethod
-    def from_json(cls, json_str: str):
-        """
-        Deserializes a JSON string into a RoleAllocation object.
-
-        :param json_str: JSON string representation of the role allocation.
-        :return: RoleAllocation object.
-        """
-        data = json.loads(json_str)
-        return cls(data)

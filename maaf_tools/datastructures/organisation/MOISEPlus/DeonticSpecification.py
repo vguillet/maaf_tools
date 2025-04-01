@@ -7,15 +7,15 @@ import warnings
 #from typing import Self
 
 try:
-    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.datastructures.MaafItem import MaafItem
 
 except:
-    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
 
 
-class DeonticSpecification(dict, MoiseComponent):
+class DeonticSpecification(dict, MaafItem):
     def __init__(self,
                  deontic_specification: dict or None = None,
                  structural_specification = None,

@@ -5,13 +5,13 @@ import json
 from pprint import pprint
 
 try:
-    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
     from maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
     from maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
 
 except:
-    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
@@ -19,7 +19,7 @@ except:
 ##################################################################################################################
 
 
-class MoiseModel(MoiseComponent):
+class MoiseModel(MaafItem):
     """
     A class representing a MOISEPlus model for specifying multiagent system organizations.
 

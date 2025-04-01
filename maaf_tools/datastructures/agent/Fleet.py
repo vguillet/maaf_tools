@@ -8,6 +8,8 @@ from copy import deepcopy
 try:
     from maaf_tools.datastructures.MaafList import MaafList
 
+    from maaf_tools.datastructures.organisation.Organisation import Organisation
+
     from maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.datastructures.agent.Plan import Plan
     from maaf_tools.datastructures.agent.Agent import Agent
@@ -15,6 +17,8 @@ try:
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
+
+    from maaf_tools.maaf_tools.datastructures.organisation.Organisation import Organisation
 
     from maaf_tools.maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
@@ -293,18 +297,30 @@ class Fleet(MaafList):
     def from_config_files(
             cls,
             fleet_agents: list,
-            agent_classes: dict
+            agent_classes: dict,
+            organisation_model: Organisation or dict = None,
         ) -> "Fleet":
         """
         Create a Fleet object from configuration files.
 
         :param fleet_agents: The fleet agents configuration file.
         :param agent_classes: The agent classes configuration file.
+        :param organisation_model: The organisation model configuration file. If None, a new Organisation object will be created.
 
         :return: A Fleet object.
         """
 
         # TODO: Add logic for checking if the config files are correctly formatted
+
+        if organisation_model is None:
+            organisation_model = Organisation()
+
+        elif isinstance(organisation_model, dict):
+            organisation_model = Organisation.from_dict(data=organisation_model)
+
+        # -> If the organisation model contains a fleet, remove it
+        if organisation_model is not None and organisation_model.fleet is not None:
+            organisation_model.fleet = None
 
         fleet = cls()
 
@@ -314,12 +330,15 @@ class Fleet(MaafList):
             agent = Agent(
                 id=agent["id"],
                 name=agent["name"],
-                agent_class=agent["class"],
-                skillset=agent_classes[agent["class"]]["skillset"],
-                specs=agent["specs"],
+                agent_class=agent["agent_class"],
 
-                hierarchy_level=0,
-                affiliations=[],
+                # Determined from organisational structure
+                specs=agent_classes[agent["agent_class"]]["specs"],
+                skillset=agent_classes[agent["agent_class"]]["skillset"],
+
+                organisation_model=organisation_model,
+
+                # Default values
                 state=AgentState(
                     agent_id=agent["id"],
                     _timestamp=0,

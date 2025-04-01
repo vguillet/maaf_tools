@@ -510,7 +510,7 @@ class TaskGraph(MaafItem):
 
         return
 
-    # ============================================================== To
+    # ============================================================== Serialization / Parsing
     def asdict(self) -> dict:
         """
         Create a dictionary containing the fields of the Task data class instance with their current values.
@@ -530,7 +530,6 @@ class TaskGraph(MaafItem):
             "graph": nx.node_link_data(graph_copy),
         }
 
-    # ============================================================== From
     @classmethod
     def from_dict(cls, task_dict: dict, partial: bool = False):
         """

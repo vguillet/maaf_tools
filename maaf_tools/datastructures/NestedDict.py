@@ -28,6 +28,7 @@ class NestedDict(MaafItem):
 
         self.data[key] = value
 
+    # ============================================================== Serialization / Parsing
     def asdict(self) -> dict:
         """
         Create a dictionary containing the fields of the item data class instance with their current values.

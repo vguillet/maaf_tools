@@ -7,10 +7,10 @@ import warnings
 #from typing import Self
 
 try:
-    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.datastructures.MaafItem import MaafItem
 
 except:
-    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
 
@@ -18,7 +18,7 @@ RELATIONS = ["acquaintance", "communication", "authority", "compatible", "couple
 SCOPES = ["inter", "intra", "omni"]
 
 
-class StructuralSpecification(dict, MoiseComponent):
+class StructuralSpecification(dict, MaafItem):
     def __init__(self,
                  structural_specification: dict or None = None,
                  functional_specification = None,

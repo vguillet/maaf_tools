@@ -71,7 +71,7 @@ class AgentState(State):
 
         return "active" if active else "inactive"
 
-    # ============================================================== To
+    # ============================================================== Serialization / Parsing
     def asdf(self) -> pd.DataFrame:
         """
         Create a pandas DataFrame from the AgentState data class instance.
@@ -87,5 +87,3 @@ class AgentState(State):
         state_df = pd.DataFrame([fields_dict])
 
         return state_df
-
-    # ============================================================== From

@@ -376,7 +376,8 @@ class MaafList(MaafItem):
         else:
             if DEBUG: print(f"!!! Remove item by id failed: {self.item_class} with id '{item_id}' does not exist in the item log !!!")
 
-    # ============================================================== To
+    # ============================================================== Serialization / Parsing
+
     # def asdict(self) -> dict:
     #     """
     #     Create a dictionary containing the fields of the maaflist data class instance with their current values.
@@ -450,7 +451,6 @@ class MaafList(MaafItem):
         # -> Create a pandas DataFrame from the dictionary
         return items_df
 
-    # ============================================================== From
     # @classmethod
     # def from_dict(cls, maaflist_dict: dict, partial=False) -> "MaafList":
     #     """

@@ -4,11 +4,12 @@
 from dataclasses import dataclass, fields, field
 from abc import ABC, abstractmethod
 from copy import deepcopy
+import json
 
 ##################################################################################################################
 
 
-DEBUG = True
+DEBUG = False
 
 
 @dataclass
@@ -31,8 +32,14 @@ class MaafItem(ABC):
         """
         Call the pre asdict subscribers.
         """
-        for subscriber in self.__pre_asdict_subscribers:
-            subscriber(self)
+        try:
+            for subscriber in self.__pre_asdict_subscribers:
+                subscriber(self)
+        except AttributeError:
+            # Handle the case where the subscriber is not callable
+            if DEBUG:
+                print(f"self.__pre_asdict_subscribers attribute missing.")
+            pass
 
     # ============================================================== Get
     def clone(self):
@@ -51,10 +58,10 @@ class MaafItem(ABC):
     #     """
     #     pass
 
-    # ============================================================== To
+    # ============================================================== Serialization / Parsing
     def asdict(self, include_local: bool = False) -> dict:
         """
-        Create a dictionary containing the fields of the Task data class instance with their current values.
+        Create a dictionary containing the fields of the dataclass instance with their current values.
 
         :param include_local: Whether to include the local field in the dictionary.
 
@@ -81,13 +88,12 @@ class MaafItem(ABC):
 
         return fields_dict
 
-    # ============================================================== From
     @classmethod
     def from_dict(cls, item_dict: dict, partial: bool = False) -> object:
         """
-        Convert a dictionary to a task.
+        Convert a dictionary to a dataclass instance.
 
-        :param item_dict: The dictionary representation of the task
+        :param item_dict: The dictionary representation of the dataclass
         :param partial: Whether to allow creation from a dictionary with missing fields.
 
         :return: A task object
@@ -106,3 +112,43 @@ class MaafItem(ABC):
         )
 
         return item
+
+    def to_json(self, indent=2):
+        """
+        Serializes the dataclass instance to a JSON string.
+
+        :return: A JSON-formatted string representation of the dataclass instance.
+        """
+        return json.dumps(self.asdict(), indent=indent)
+
+    @classmethod
+    def from_json(cls, json_str: str, partial: bool = False):
+        """
+        Creates a MoiseModel instance from a JSON string.
+
+        :return: A new instance of the dataclass.
+        """
+        data = json.loads(json_str)
+        return cls.from_dict(item_dict=data, partial=partial)
+
+    def save_to_file(self, filename: str):
+        """
+        Saves the dataclass instance to a file in JSON format.
+
+        :param filename: The name of the file.
+        """
+        with open(filename, "w") as f:
+            f.write(self.to_json(indent=2))
+
+    @classmethod
+    def load_from_file(cls, filename):
+        """
+        Loads a dataclass instance from a JSON file.
+
+        :param filename: The name of the file to load.
+
+        :return: dataclass instance: A new instance of the dataclass.
+        """
+        with open(filename, "r") as f:
+            data = json.load(f)
+        return cls.from_dict(item_dict=data)

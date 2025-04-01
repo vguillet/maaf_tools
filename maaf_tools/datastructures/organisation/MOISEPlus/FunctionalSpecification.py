@@ -10,15 +10,15 @@ from bloom.generators.rpm.generate_cmd import description
 #from typing import Self
 
 try:
-    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.datastructures.MaafItem import MaafItem
 
 except:
-    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseComponent import MoiseComponent
+    from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
 
 ##################################################################################################################
 
 
-class FunctionalSpecification(dict, MoiseComponent):
+class FunctionalSpecification(dict, MaafItem):
     def __init__(self,
                  functional_specification: dict or None = None,
                  structural_specification = None,
@@ -430,18 +430,18 @@ if __name__ == "__main__":
         social_scheme_id="Operational Agents: Surveillance and Interdiction",
         description="A comprehensive set of surveillance and interdiction objectives",
         goals=[
-            {"id": "g_point_obs", "description": "A point was observed", "skill_requirements": ["goto"]},
-            {"id": "g_axis_obs", "description": "An axis was observed", "skill_requirements": ["goto"]},
-            {"id": "g_zone_obs", "description": "A zone was observed", "skill_requirements": ["goto"]},
-            {"id": "g_point_mon", "description": "A point is monitored", "skill_requirements": ["goto"]},
-            {"id": "g_axis_mon", "description": "An axis is monitored", "skill_requirements": ["goto"]},
-            {"id": "g_axis_patrol", "description": "An axis is patrolled", "skill_requirements": ["goto"]},
-            {"id": "g_zone_patrol", "description": "A zone is patrolled", "skill_requirements": ["goto"]},
-            {"id": "g_path_interdict", "description": "A path is interdicted (Obstructed or Trapped)", "skill_requirements": ["goto"]},
-            {"id": "g_path_obstruct", "description": "A path is obstructed", "skill_requirements": ["goto"]},
-            {"id": "g_path_trap", "description": "A path is trapped", "skill_requirements": ["goto", "trap"]},
-            {"id": "g_target_track", "description": "A target is tracked", "skill_requirements": ["track"]},
-            {"id": "g_target_neutral", "description": "A target is neutralised", "skill_requirements": ["neutralise"]}
+            {"id": "g_point_obs", "description": "A point was observed", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_axis_obs", "description": "An axis was observed", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_zone_obs", "description": "A zone was observed", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_point_mon", "description": "A point is monitored", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_axis_mon", "description": "An axis is monitored", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_axis_patrol", "description": "An axis is patrolled", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_zone_patrol", "description": "A zone is patrolled", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_path_interdict", "description": "A path is interdicted (Obstructed or Trapped)", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_path_obstruct", "description": "A path is obstructed", "skill_requirements": ["goto"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_path_trap", "description": "A path is trapped", "skill_requirements": ["goto", "trap"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_target_track", "description": "A target is tracked", "skill_requirements": ["track"], "bidding_logic": "graph_weighted_manhattan_distance_bid"},
+            {"id": "g_target_neutral", "description": "A target is neutralised", "skill_requirements": ["neutralise"], "bidding_logic": "graph_weighted_manhattan_distance_bid"}
         ],
         plans=[
             #{"id": "g_point_obs", "goal_sequence": ["g_point_obs"]},
