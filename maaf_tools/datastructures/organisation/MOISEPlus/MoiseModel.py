@@ -36,19 +36,18 @@ class MoiseModel(MaafItem):
                  data: dict or None = None,
                  structural_specification: StructuralSpecification or dict or None = None,
                  functional_specification: FunctionalSpecification or dict or None = None,
-                 deontic_specification: DeonticSpecification or dict or None = None
+                 deontic_specification: DeonticSpecification or dict or None = None,
                  ):
         """
         Initializes the MOISEPlus model.
         :param data: A dictionary containing the model data. If provided, it will override the other parameters.
-
-        :param data:
-        :param structural_specification:
-        :param functional_specification:
-        :param deontic_specification:
+        :param structural_specification: Structural specification of the model.
+        :param functional_specification: Functional specification of the model.
+        :param deontic_specification: Deontic specification of the model.
         """
 
         if data is not None:
+            # TODO: Add check for data type
             if not isinstance(data, dict):
                 raise ValueError("The data must be a dictionary.")
             structural_specification = data.get("structural_specification", None)
@@ -61,12 +60,15 @@ class MoiseModel(MaafItem):
         self.deontic_specification = DeonticSpecification(deontic_specification)
 
         # -> Setup cross-references
+        # Structural Specification
         self.structural_specification.functional_specification = self.functional_specification
         self.structural_specification.deontic_specification = self.deontic_specification
 
+        # Functional Specification
         self.functional_specification.structural_specification = self.structural_specification
         self.functional_specification.deontic_specification = self.deontic_specification
 
+        # Deontic Specification
         self.deontic_specification.structural_specification = self.structural_specification
         self.deontic_specification.functional_specification = self.functional_specification
 

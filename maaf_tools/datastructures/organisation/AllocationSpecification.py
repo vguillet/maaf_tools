@@ -11,9 +11,11 @@ from bloom.generators.rpm.generate_cmd import description
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
 
 ##################################################################################################################
 
@@ -21,9 +23,7 @@ except:
 class AllocationSpecification(dict, MaafItem):
     def __init__(self,
                  allocation_specification: dict or None = None,
-                 functional_specification = None,
-                 structural_specification = None,
-                 deontic_specification = None
+                 moise_model: dict or None = None,
                  ):
         # If no specification is provided, use the default template.
         if allocation_specification is None:
@@ -44,38 +44,55 @@ class AllocationSpecification(dict, MaafItem):
         super().__init__(allocation_specification)
 
         # -> Initialize the structural, functional, and deontic specification
-        self.__structural_specification = structural_specification
-        self.__functional_specification = functional_specification
-        self.__deontic_specification = deontic_specification
+        self.__moise_model = None
+        self.moise_model = moise_model
 
     # ============================================================== Properties
     @property
-    def structural_specification(self):
-        return self.__structural_specification
+    def moise_model(self):
+        """
+        Get the MOISE model associated with this allocation specification.
 
-    @structural_specification.setter
-    def structural_specification(self, value):
-        self.__structural_specification = value
+        :return: The MOISE model.
+        """
+        return self.__moise_model
+
+    @moise_model.setter
+    def moise_model(self, moise_model: dict):
+        """
+        Set the MOISE model associated with this allocation specification.
+
+        :param moise_model: The MOISE model to set.
+        """
+        self.__moise_model = moise_model
 
     @property
-    def functional_specification(self):
-        return self.__functional_specification
+    def moise_model_available(self) -> bool:
+        """
+        Check if the MOISE model is available.
 
-    @functional_specification.setter
-    def functional_specification(self, value):
-        self.__functional_specification = value
+        :return: True if the MOISE model is available, False otherwise.
+        """
 
-    @property
-    def deontic_specification(self):
-        return self.__deontic_specification
+        # Check if the MOISE model is available
+        if self.__moise_model is None or not isinstance(self.__moise_model, MoiseModel):
+            return False
 
-    @deontic_specification.setter
-    def deontic_specification(self, value):
-        self.__deontic_specification = value
+        return True
 
     # ============================================================== Check
 
+    @staticmethod
+    def moise_model_check(func):
+        def wrapper(self, *args, **kwargs):
+            if not self.moise_model_available:
+                raise ValueError("The MOISE model is not available.")
+            return func(self, *args, **kwargs)
+        return wrapper
+
     # ============================================================== Get
+
+    @moise_model_check
     def get_group_ambassadors(self, group_id: str):
         """
         Get the ambassadors for a specific group ID.
@@ -83,8 +100,10 @@ class AllocationSpecification(dict, MaafItem):
         :param group_id: The ID of the group.
         :return: List of ambassadors.
         """
+
         pass
 
+    @moise_model_check
     def get_intercession_targets(self, goal_id, roles: list) -> list:
         """
         Get the intercession targets for a specific goal ID and roles.
@@ -95,6 +114,7 @@ class AllocationSpecification(dict, MaafItem):
         """
         pass
 
+    @moise_model_check
     def get_hierarchy_level(self, agent_id: str, group_id: str) -> str:
         """
         Get the hierarchy level of a specific agent within a group.
@@ -105,6 +125,38 @@ class AllocationSpecification(dict, MaafItem):
         """
         pass
 
+    @moise_model_check
+    def get_task_bidding_logic(self, task_id: str) -> callable:
+        """
+        Get the bidding logic for a specific task ID.
+
+        :param task_id: The ID of the task.
+        :return: Bidding logic (function or callable).
+        """
+        pass
+
+    def get_property(self, agent_id: str, property_name: str):
+        """
+        Get a specific property from the allocation specification for a given agent ID.
+
+        :param agent_id: The ID of the agent.
+        :param property_name: The name of the property to retrieve.
+        :return: The value of the specified property.
+        """
+
+        # -> Check if the property name is in global properties
+        if property_name in self.get("global", {}):
+            return self["global"][property_name]
+
+        # -> Check if the property name is in the agent's properties
+        if agent_id in self.get("team", {}):
+            agent_properties = self["team"][agent_id]
+            if property_name in agent_properties:
+                return agent_properties[property_name]
+            else:
+                raise ValueError(f"Property '{property_name}' not found for agent ID '{agent_id}'.")
+        else:
+            raise ValueError(f"Agent ID '{agent_id}' not found in the allocation specification.")
 
     # ============================================================== Set
 

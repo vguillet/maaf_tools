@@ -215,3 +215,11 @@ class RoleAllocation(dict, MaafItem):
     # ============================================================== Remove
 
     # ============================================================== Serialization / Parsing
+    def asdict(self, include_local: bool = False) -> dict:
+        """
+        Create a dictionary containing the fields of the dataclass instance with their current values.
+
+        :param include_local: Whether to include the local field in the dictionary.
+        :return: Dictionary representation of the instance.
+        """
+        return self

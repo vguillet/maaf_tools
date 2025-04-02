@@ -9,15 +9,17 @@ import warnings
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.datastructures.agent.Fleet import Fleet
     from maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
     from maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
-    #from maaf_tools.datastructures.agent.Fleet import Fleet
+    from maaf_tools.datastructures.organisation.AllocationSpecification import AllocationSpecification
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.datastructures.agent.Fleet import Fleet
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
     from maaf_tools.maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
-    #from maaf_tools.maaf_tools.datastructures.agent.Fleet import Fleet
+    from maaf_tools.maaf_tools.datastructures.organisation.AllocationSpecification import AllocationSpecification
 
 ##################################################################################################################
 
@@ -26,7 +28,8 @@ class Organisation(MaafItem):
     def __init__(self,
                  fleet = None,
                  moise_model: MoiseModel or dict = None,
-                 role_allocation: RoleAllocation or dict = None
+                 role_allocation: RoleAllocation or dict = None,
+                 allocation_specification: dict = None,
                  ):
         # -> Setup fleet
         self.__fleet = None
@@ -40,6 +43,10 @@ class Organisation(MaafItem):
         self.__role_allocation = None
         self.role_allocation = role_allocation
 
+        # -> Setup Allocation Specification
+        self.__allocation_specification = None
+        self.allocation_specification = allocation_specification
+
     def __repr__(self):
         """Returns a string representation of the organisation."""
         string = f"MOISE+ Model:\n  > {self.moise_model}" \
@@ -52,29 +59,26 @@ class Organisation(MaafItem):
         return self.__repr__()
 
     # ============================================================== Properties
+    # ------------------------- Fleet
     @property
     def fleet(self):
         return self.__fleet
 
     @fleet.setter
     def fleet(self, fleet):
-        try:
-            from maaf_tools.datastructures.agent.Fleet import Fleet
-        except:
-            from maaf_tools.maaf_tools.datastructures.agent.Fleet import Fleet
-
         if fleet is None:
             self.__fleet = Fleet()
-
-        elif isinstance(fleet, Fleet):
-            self.__fleet = fleet
 
         elif isinstance(fleet, dict):
              self.__fleet = Fleet().from_dict(item_dict=fleet)
 
+        elif isinstance(fleet, Fleet):
+            self.__fleet = fleet
+
         else:
             raise ValueError("Invalid Fleet format. Must be either a Fleet instance or a dictionary.")
 
+    # ------------------------- Moise Model
     @property
     def moise_model(self):
         return self.__moise_model
@@ -84,15 +88,16 @@ class Organisation(MaafItem):
         if moise_model is None:
             self.__moise_model = MoiseModel()
 
-        elif isinstance(moise_model, MoiseModel):
-            self.__moise_model = moise_model
-
         elif isinstance(moise_model, dict):
             self.__moise_model = MoiseModel(moise_model)
+
+        elif isinstance(moise_model, MoiseModel):
+            self.__moise_model = moise_model
 
         else:
             raise ValueError("Invalid Moise Model format. Must be either a MoiseModel instance or a dictionary.")
 
+    # ------------------------- Role Allocation
     @property
     def role_allocation(self):
         return self.__role_allocation
@@ -102,11 +107,11 @@ class Organisation(MaafItem):
         if role_allocation is None:
             self.__role_allocation = RoleAllocation()
 
-        elif isinstance(role_allocation, RoleAllocation):
-            self.__role_allocation = role_allocation
-
         elif isinstance(role_allocation, dict):
             self.__role_allocation = RoleAllocation(role_allocation)
+
+        elif isinstance(role_allocation, RoleAllocation):
+            self.__role_allocation = role_allocation
 
         else:
             raise ValueError("Invalid Role Allocation format. Must be either a RoleAllocation instance or a dictionary.")
@@ -124,6 +129,29 @@ class Organisation(MaafItem):
         """
         # return self.check_role_allocation_validity(stop_at_first_error=True, verbose=0)
         return self.check_role_allocation_validity(stop_at_first_error=False, verbose=1)
+
+    # ------------------------- Allocation Specification
+    @property
+    def allocation_specification(self):
+        return self.__allocation_specification
+
+    @allocation_specification.setter
+    def allocation_specification(self, allocation_specification):
+        if allocation_specification is None:
+            self.__allocation_specification = AllocationSpecification()
+
+        elif isinstance(allocation_specification, dict):
+            self.__allocation_specification = AllocationSpecification(allocation_specification)
+
+        elif isinstance(allocation_specification, AllocationSpecification):
+            self.__allocation_specification = allocation_specification
+
+        else:
+            raise ValueError("Invalid Allocation Specification format. Must be either an AllocationSpecification instance or a dictionary.")
+
+        # -> If Moise Model has already been set, set pointer in the allocation specification
+        if self.moise_model is not None:
+            self.__allocation_specification.moise_model = self.moise_model
 
     # ============================================================== Check
     def check_role_allocation_validity(self, stop_at_first_error = False, verbose = 1):
@@ -223,25 +251,28 @@ class Organisation(MaafItem):
 
     # ============================================================== Serialization / Parsing
 
-    def to_dict(self) -> dict:
-        """Returns a dictionary representation of the team."""
-        return {
-            "moise_model": self.moise_model.asdict(),
-            "role_allocation": self.role_allocation
-        }
+    def asdict(self, include_local: bool = False) -> dict:
+         """Returns a dictionary representation of the team."""
+         return {
+             "fleet": self.fleet.asdict(),
+             "moise_model": self.moise_model.asdict(),
+             "role_allocation": self.role_allocation,
+             "allocation_specification": self.allocation_specification
+         }
 
-    # @classmethod
-    # def from_dict(cls, item_dict: dict, partial: bool = False) -> object:
-    #     """
-    #     Initializes the team from a dictionary.
-    #
-    #     :return: A new instance of Team.
-    #     """
-    #
-    #     return cls(
-    #         moise_model=MoiseModel(item_dict["moise_model"]),
-    #         role_allocation=item_dict["role_allocation"]
-    #     )
+    @classmethod
+    def from_dict(cls, item_dict: dict, partial: bool = False) -> object:
+         """
+         Initializes the team from a dictionary.
+
+         :return: A new instance of Team.
+         """
+
+         return cls(
+             moise_model=MoiseModel(item_dict["moise_model"]),
+             role_allocation=item_dict["role_allocation"],
+             allocation_specification=item_dict["allocation_specification"]
+         )
 
     def save_to_file(self,
                      filename: str,
@@ -250,7 +281,8 @@ class Organisation(MaafItem):
                      model: bool = False,
                      structural_specification: bool = False,
                      functional_specification: bool = False,
-                     deontic_specification: bool = False
+                     deontic_specification: bool = False,
+                     allocation_specification: bool = False
                      ):
         """
         Saves the team to a file. Also saves the role allocation and model separately if specified.
@@ -262,14 +294,15 @@ class Organisation(MaafItem):
         :param structural_specification: If True, saves the structural specification separately.
         :param functional_specification: If True, saves the functional specification separately.
         :param deontic_specification: If True, saves the deontic specification separately.
+        :param allocation_specification: If True, saves the allocation specification separately.
         """
 
         if not organisation and not role_allocation and not model:
             raise ValueError("At least one of 'combined', 'role_allocation', or 'model' must be True.")
 
         if organisation:
-            with open(filename, "w") as file:
-                file.write(self.to_json())
+            with open(filename, "w") as f:
+                f.write(self.to_json(indent=2))
 
         if role_allocation:
             role_allocation_filename = filename.replace(".json", "_role_allocation.json")
@@ -290,6 +323,10 @@ class Organisation(MaafItem):
         if deontic_specification:
             deontic_specification_filename = filename.replace(".json", "_deontic_specification.json")
             self.moise_model.deontic_specification.save_to_file(deontic_specification_filename)
+
+        if allocation_specification:
+            allocation_specification_filename = filename.replace(".json", "_allocation_specification.json")
+            self.allocation_specification.save_to_file(allocation_specification_filename)
 
 if __name__ == "__main__":
     from maaf_tools.maaf_tools.datastructures.agent.Fleet import Fleet
@@ -322,11 +359,11 @@ if __name__ == "__main__":
 
     # -> Construct fleet
     # Load agent classes json and fleet agents json
-    with open("icare_alloc_config/icare_alloc_config/agent_classes.json", "r") as file:
+    with open("icare_alloc_config/icare_alloc_config/fleet_agent_classes.json", "r") as file:
         agent_classes = json.load(file)
 
     with open("icare_alloc_config/icare_alloc_config/fleet_agents.json", "r") as file:
-        fleet_agents = json.load(file)["team"]
+        fleet_agents = json.load(file)
 
     # Construct fleet instance
     fleet = Fleet.from_config_files(
@@ -334,10 +371,14 @@ if __name__ == "__main__":
         agent_classes=agent_classes
     )
 
+    with open("icare_alloc_config/icare_alloc_config/fleet_allocation_specification.json", "r") as file:
+        allocation_specification = json.load(file)
+
     organisation_model = Organisation(
         fleet=fleet,
         moise_model=model,
-        role_allocation=role_allocation
+        role_allocation=role_allocation,
+        allocation_specification=allocation_specification
     )
 
     # -------------------------- Save to file
@@ -348,7 +389,8 @@ if __name__ == "__main__":
         model=True,
         structural_specification=True,
         functional_specification=True,
-        deontic_specification=True
+        deontic_specification=True,
+        allocation_specification=True
     )
 
     with open("icare_alloc_config/icare_alloc_config/__CoHoMa_organisation_model_v1.json", "r") as file:

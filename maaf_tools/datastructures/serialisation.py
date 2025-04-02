@@ -9,7 +9,16 @@ import numpy as np
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.datastructures.MaafList import MaafList
-    
+
+    # -> Organisation
+    from maaf_tools.datastructures.organisation.Organisation import Organisation
+    from maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
+    from maaf_tools.datastructures.organisation.AllocationSpecification import AllocationSpecification
+    from maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
+    from maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
+    from maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
+    from maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
+
     # -> Fleet
     from maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.datastructures.agent.Plan import Plan
@@ -24,7 +33,16 @@ try:
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
-    
+
+    # -> Organisation
+    from maaf_tools.maaf_tools.datastructures.organisation.Organisation import Organisation
+    from maaf_tools.maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
+    from maaf_tools.maaf_tools.datastructures.organisation.AllocationSpecification import AllocationSpecification
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.StructuralSpecification import StructuralSpecification
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.FunctionalSpecification import FunctionalSpecification
+    from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.DeonticSpecification import DeonticSpecification
+
     # -> Fleet
     from maaf_tools.maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
@@ -77,6 +95,15 @@ types_str_class_dict = {
     "Task": Task,
     "TaskGraph": TaskGraph,
     "TaskLog": TaskLog,
+
+    # Organisation
+    "Organisation": Organisation,
+    "RoleAllocation": RoleAllocation,
+    "MoiseModel": MoiseModel,
+    "AllocationSpecification": AllocationSpecification,
+    "StructuralSpecification": StructuralSpecification,
+    "FunctionalSpecification": FunctionalSpecification,
+    "DeonticSpecification": DeonticSpecification
 }
 
 # -> Create a dictionary with class types as keys and their string representation as values

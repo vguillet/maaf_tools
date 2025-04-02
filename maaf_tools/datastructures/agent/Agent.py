@@ -24,8 +24,6 @@ except ImportError:
     from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.maaf_tools.datastructures.task.Task import Task
 
-    from maaf_tools.maaf_tools.datastructures.organisation.Organisation import Organisation
-
     from maaf_tools.maaf_tools.tools import deep_compare
     from maaf_tools.maaf_tools.Singleton import SLogger
 
@@ -46,13 +44,13 @@ class Agent(MaafItem):
     specs: dict                                 # Specifications of the agent
     skillset: list[str]                         # Skillset of the agent
 
-    organisation_model: Organisation            # Organisation model of the agent
-
     state: AgentState                           # State of the agent, state object
     plan: Plan                                  # Plan of the agent, plan object
 
-    # shared: NestedDict = field(default_factory=NestedDict)  # Shared data of the agent, gets serialized and passed around
+    #organisation_model: Organisation or None = field(default=None)  # Organisation model of the agent
+
     # local: NestedDict = field(default_factory=NestedDict)   # Local data of the agent, does not get serialized and passed around
+    # shared: NestedDict = field(default_factory=NestedDict)  # Shared data of the agent, gets serialized and passed around
 
     shared: dict = field(default_factory=dict)  # Shared data of the agent, gets serialized and passed around
     local: dict = field(default_factory=dict)   # Local data of the agent, does not get serialized and passed around
@@ -88,13 +86,6 @@ class Agent(MaafItem):
             "name": self.name,
             "agent_class": self.agent_class
         }
-
-    @property
-    def affiliations(self) -> list[str]:
-        """
-        Get the affiliations of the agent.
-        """
-        return self.organisation_model.role_allocation.get_group_affiliations(agent_id=self.id)
 
     def has_state(self, state: AgentState) -> bool:
         """

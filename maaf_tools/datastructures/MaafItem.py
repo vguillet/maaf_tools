@@ -141,14 +141,15 @@ class MaafItem(ABC):
             f.write(self.to_json(indent=2))
 
     @classmethod
-    def load_from_file(cls, filename):
+    def load_from_file(cls, filename, partial: bool = False):
         """
         Loads a dataclass instance from a JSON file.
 
         :param filename: The name of the file to load.
+        :param partial: Whether to allow creation from a dictionary with missing fields.
 
         :return: dataclass instance: A new instance of the dataclass.
         """
         with open(filename, "r") as f:
             data = json.load(f)
-        return cls.from_dict(item_dict=data)
+        return cls.from_dict(item_dict=data, partial=partial)

@@ -8,8 +8,6 @@ from copy import deepcopy
 try:
     from maaf_tools.datastructures.MaafList import MaafList
 
-    from maaf_tools.datastructures.organisation.Organisation import Organisation
-
     from maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.datastructures.agent.Plan import Plan
     from maaf_tools.datastructures.agent.Agent import Agent
@@ -17,8 +15,6 @@ try:
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
-
-    from maaf_tools.maaf_tools.datastructures.organisation.Organisation import Organisation
 
     from maaf_tools.maaf_tools.datastructures.agent.AgentState import AgentState
     from maaf_tools.maaf_tools.datastructures.agent.Plan import Plan
@@ -296,51 +292,35 @@ class Fleet(MaafList):
     @classmethod
     def from_config_files(
             cls,
-            fleet_agents: list,
+            fleet_agents: dict,
             agent_classes: dict,
-            organisation_model: Organisation or dict = None,
         ) -> "Fleet":
         """
         Create a Fleet object from configuration files.
 
         :param fleet_agents: The fleet agents configuration file.
         :param agent_classes: The agent classes configuration file.
-        :param organisation_model: The organisation model configuration file. If None, a new Organisation object will be created.
 
         :return: A Fleet object.
         """
 
-        # TODO: Add logic for checking if the config files are correctly formatted
-
-        if organisation_model is None:
-            organisation_model = Organisation()
-
-        elif isinstance(organisation_model, dict):
-            organisation_model = Organisation.from_dict(data=organisation_model)
-
-        # -> If the organisation model contains a fleet, remove it
-        if organisation_model is not None and organisation_model.fleet is not None:
-            organisation_model.fleet = None
-
         fleet = cls()
 
         # -> For all agents in the fleet ...
-        for agent in fleet_agents:
+        for agent_id, agent_properties in fleet_agents.items():
             # -> Create an agent object from the configuration file
             agent = Agent(
-                id=agent["id"],
-                name=agent["name"],
-                agent_class=agent["agent_class"],
+                id=agent_id,
+                name=agent_properties["name"],
+                agent_class=agent_properties["agent_class"],
 
                 # Determined from organisational structure
-                specs=agent_classes[agent["agent_class"]]["specs"],
-                skillset=agent_classes[agent["agent_class"]]["skillset"],
-
-                organisation_model=organisation_model,
+                specs=agent_classes[agent_properties["agent_class"]]["specs"],
+                skillset=agent_classes[agent_properties["agent_class"]]["skillset"],
 
                 # Default values
                 state=AgentState(
-                    agent_id=agent["id"],
+                    agent_id=agent_id,
                     _timestamp=0,
                     battery_level=100,
                     stuck=False,
