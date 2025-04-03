@@ -194,9 +194,9 @@ class RoleAllocation(dict, MaafItem):
                     group_affiliations.append(assignment["instance"])
         return group_affiliations
 
-    def get_roles(self, agent_id: str) -> list:
+    def get_agent_roles(self, agent_id: str, group_id: str = None) -> list:
         """
-        Get the roles for a specific agent ID.
+        Get the roles for a specific agent ID. If a group ID is provided, filter roles by that group.
 
         :param agent_id: The ID of the agent.
         :return: List of roles.
@@ -205,8 +205,27 @@ class RoleAllocation(dict, MaafItem):
         for member in self.get("team", []):
             if member["id"] == agent_id:
                 for assignment in member["assignments"]:
-                    roles.extend(assignment["roles"])
+                    if group_id is None or assignment["instance"] == group_id:
+                        if assignment["instance"] == group_id:
+                            roles.extend(assignment["roles"])
+                        else:
+                            # If no group ID is provided, get all roles
+                            roles.extend(assignment["roles"])
         return roles
+
+    def get_agents_in_group(self, group_id: str) -> list:
+        """R
+        Get the agents in a specific group ID.
+
+        :param group_id: The ID of the group.
+        :return: List of agents in the group.
+        """
+        agents = []
+        for member in self.get("team", []):
+            for assignment in member["assignments"]:
+                if assignment["instance"] == group_id:
+                    agents.append(member["id"])
+        return agents
 
     # ============================================================== Set
 

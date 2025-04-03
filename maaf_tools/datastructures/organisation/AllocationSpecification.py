@@ -12,18 +12,31 @@ from bloom.generators.rpm.generate_cmd import description
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
+    from maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
+    from maaf_allocation_node.bidding_logics.bidding_logics_dict import bidding_logics_dict
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
+    from maaf_tools.maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
+    from maaf_allocation_node.maaf_allocation_node.bidding_logics.bidding_logics_dict import bidding_logics_dict
 
 ##################################################################################################################
+
+ABSTRACT_AUCTION_ROLES = {
+    "Auction Participant": {
+        "Announcer": {},
+        "Ambassador": {},
+        "Bidder": {}
+    }
+}
 
 
 class AllocationSpecification(dict, MaafItem):
     def __init__(self,
                  allocation_specification: dict or None = None,
                  moise_model: dict or None = None,
+                 role_allocation: dict or None = None,
                  ):
         # If no specification is provided, use the default template.
         if allocation_specification is None:
@@ -43,9 +56,13 @@ class AllocationSpecification(dict, MaafItem):
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(allocation_specification)
 
-        # -> Initialize the structural, functional, and deontic specification
+        # -> Initialize the moise model and role allocation
         self.__moise_model = None
         self.moise_model = moise_model
+
+        self.__role_allocation = None
+        self.role_allocation = role_allocation
+
 
     # ============================================================== Properties
     @property
@@ -66,6 +83,10 @@ class AllocationSpecification(dict, MaafItem):
         """
         self.__moise_model = moise_model
 
+        # -> Check if the MOISE model is valid
+        if isinstance(moise_model, MoiseModel):
+            self.check_allocation_roles_structure()
+
     @property
     def moise_model_available(self) -> bool:
         """
@@ -80,8 +101,25 @@ class AllocationSpecification(dict, MaafItem):
 
         return True
 
-    # ============================================================== Check
+    @property
+    def role_allocation(self):
+        """
+        Get the role allocation associated with this allocation specification.
 
+        :return: The role allocation.
+        """
+        return self.__role_allocation
+
+    @role_allocation.setter
+    def role_allocation(self, role_allocation: dict):
+        """
+        Set the role allocation associated with this allocation specification.
+
+        :param role_allocation: The role allocation to set.
+        """
+        self.__role_allocation = role_allocation
+
+    # ============================================================== Check
     @staticmethod
     def moise_model_check(func):
         def wrapper(self, *args, **kwargs):
@@ -90,8 +128,49 @@ class AllocationSpecification(dict, MaafItem):
             return func(self, *args, **kwargs)
         return wrapper
 
-    # ============================================================== Get
+    @moise_model_check
+    def check_allocation_roles_structure(self):
+        """
+        Check the structure of the allocation roles.
 
+        Ensure that the structural specification contains the basic key abstract roles structure:
+        - Auction Participant (parent)
+            - Announcer
+            - Ambassador
+            - Bidder
+
+        :return: True if the structure is valid, False otherwise.
+        """
+
+        # -> Fetch roles from structural specification
+        roles = self.moise_model.structural_specification.roles
+
+        # -> Build a lookup dictionary for quick access by role name.
+        role_lookup = {role["name"]: role for role in roles}
+
+        def check_node(parent_name, children_dict):
+            for child_name, grandchildren in children_dict.items():
+                # Check that the child role exists.
+                if child_name not in role_lookup:
+                    return False
+                # Check that the child's 'inherits' field is as expected.
+                if role_lookup[child_name]["inherits"] != parent_name:
+                    return False
+                # Recursively check the children of this child.
+                if not check_node(child_name, grandchildren):
+                    return False
+            return True
+
+        # ... for each top-level role in the structure, verify the node and its descendants.
+        for top_role, children in ABSTRACT_AUCTION_ROLES.items():
+            if top_role not in role_lookup:
+                return False
+            if not check_node(top_role, children):
+                return False
+
+        return True
+
+    # ============================================================== Get
     @moise_model_check
     def get_group_ambassadors(self, group_id: str):
         """
@@ -101,7 +180,22 @@ class AllocationSpecification(dict, MaafItem):
         :return: List of ambassadors.
         """
 
-        pass
+        # -> Get ambassador roles
+        ambassador_roles = self.moise_model.structural_specification.get_children_roles(parent_role="Ambassador")
+
+        # -> Get agents in group
+        agents = self.role_allocation.get_agents_in_group(group_id=group_id)
+
+        # -> Get agents with ambassador role
+        ambassadors = []
+        for agent in agents:
+            agent_roles = self.role_allocation.get_agent_roles(agent_id=agent, group_id=group_id)
+            for role in agent_roles:
+                if role in ambassador_roles:
+                    ambassadors.append(agent)
+                    break
+
+        return ambassadors
 
     @moise_model_check
     def get_intercession_targets(self, goal_id, roles: list) -> list:
@@ -112,7 +206,7 @@ class AllocationSpecification(dict, MaafItem):
         :param roles: List of roles to check for intercession targets.
         :return: List of intercession targets (agent_ids).
         """
-        pass
+        raise NotImplementedError("This method is not implemented yet.")
 
     @moise_model_check
     def get_hierarchy_level(self, agent_id: str, group_id: str) -> str:
@@ -123,7 +217,7 @@ class AllocationSpecification(dict, MaafItem):
         :param group_id: The ID of the group.
         :return: Hierarchy level (e.g., "P1", "P2", "Captain", etc...).
         """
-        pass
+        raise NotImplementedError("This method is not implemented yet.")
 
     @moise_model_check
     def get_task_bidding_logic(self, task_id: str) -> callable:
@@ -133,7 +227,23 @@ class AllocationSpecification(dict, MaafItem):
         :param task_id: The ID of the task.
         :return: Bidding logic (function or callable).
         """
-        pass
+        # -> Get the task
+        task = self.moise_model.functional_specification.get_goal(goal_id=task_id)
+
+        if task is None:
+            raise ValueError(f"Task ID '{task_id}' not found in the functional specification.")
+
+        # -> Get the bidding logic
+        bidding_logic = task.get("bidding_logic", None)
+
+        if bidding_logic is None:
+            raise ValueError(f"Bidding logic not found for task ID '{task_id}'.")
+
+        elif bidding_logic not in bidding_logics_dict:
+            raise ValueError(f"Bidding logic {bidding_logic} not found for task ID '{task_id}'.")
+
+        # -> Return the bidding logic function
+        return bidding_logics_dict[bidding_logic]
 
     def get_property(self, agent_id: str, property_name: str):
         """
@@ -165,7 +275,7 @@ class AllocationSpecification(dict, MaafItem):
     # ============================================================== Remove
 
     # ============================================================== Serialization / Parsing
-    def asdict(self) -> dict:
+    def asdict(self, *args, **kwargs) -> dict:
         """
         Returns the structural specification as a dictionary.
         """

@@ -153,6 +153,9 @@ class Organisation(MaafItem):
         if self.moise_model is not None:
             self.__allocation_specification.moise_model = self.moise_model
 
+        if self.role_allocation is not None:
+            self.__allocation_specification.role_allocation = self.role_allocation
+
     # ============================================================== Check
     def check_role_allocation_validity(self, stop_at_first_error = False, verbose = 1):
         if self.role_allocation is None:
@@ -397,6 +400,8 @@ if __name__ == "__main__":
         model = json.load(file)
 
     organisation_model = Organisation.from_dict(item_dict=model)
+
+    print(organisation_model.allocation_specification.get_group_ambassadors("ScoutingTeam_1"))
     #organisation_model.plot_team_structure()
 
     # print(organisation_model)

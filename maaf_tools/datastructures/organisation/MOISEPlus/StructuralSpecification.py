@@ -80,6 +80,11 @@ class StructuralSpecification(dict, MaafItem):
         return self["roles"]
 
     @property
+    def roles_names(self) -> list:
+        """Returns the list of role names in the structural specification."""
+        return [role["name"] for role in self.roles]
+
+    @property
     def abstract_roles(self) -> list:
         """Returns the list of abstract roles in the structural specification."""
         return [role for role in self.roles if role["abstract"]]
@@ -638,6 +643,30 @@ class StructuralSpecification(dict, MaafItem):
             return True
 
     # ============================================================== Get
+    def get_group_by_id(self, group_id: str):
+        """
+        Returns the group specification by ID.
+
+        :param group_id: The ID of the group.
+        :return: A dictionary with the group specification.
+        """
+        for group in self["groups"]:
+            if group["id"] == group_id:
+                return group
+        return None
+
+    def get_role_by_id(self, role_id: str):
+        """
+        Returns the role specification by ID.
+
+        :param role_id: The ID of the role.
+        :return: A dictionary with the role specification.
+        """
+        for role in self["roles"]:
+            if role["id"] == role_id:
+                return role
+        return None
+
     def get_roles_compatible_with_skillset(self, skillset: list[str]) -> list[str]:
         """
         Returns a list of concrete role names from the structural specification that are compatible
@@ -810,6 +839,23 @@ class StructuralSpecification(dict, MaafItem):
                 group["roles"][role_name] = role_cardinality["min"]
 
         return minimal_viable_team_composition
+
+    def get_children_roles(self, parent_role: str, include_abstract_roles=False) -> list:
+        """
+        Recursive returns the children roles of a given parent role.
+
+        :param parent_role: The name of the parent role.
+        :return: A list of child roles.
+        """
+        children = []
+        for role in self.roles:
+            if role.get("inherits") == parent_role:
+                if include_abstract_roles and not role["abstract"]:
+                    children.append(role["name"])
+                else:
+                    children.append(role["name"])
+                children.extend(self.get_children_roles(role["name"]))
+        return children
 
     # ============================================================== Set
 
