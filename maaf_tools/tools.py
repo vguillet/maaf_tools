@@ -5,63 +5,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import json
+import orjson
 
 from rclpy.time import Time
-
-
-def graph_to_json(graph, pos, shortest_paths=None) -> dict:
-    """
-    Convert the graph and the positions to a JSON string.
-
-    :return: The JSON string representation of the graph.
-    """
-
-    graph_json = {
-        "env_type": "graph",
-        "graph": nx.node_link_data(graph),
-        "pos": {str(k): v for k, v in pos.items()}
-    }
-
-    if shortest_paths is not None:
-        graph_json["shortest_paths"] = {str(k): {str(k2): v2 for k2, v2 in v.items()} for k, v in shortest_paths.items()}
-
-    return graph_json
-
-
-def json_to_graph(graph_json: str) -> (nx.Graph, dict):
-    """
-    Convert a JSON string to a graph.
-
-    :param graph_json: The JSON string representation of the graph.
-
-    :return: A graph object.
-    :return: A dictionary containing the positions of the nodes.
-    """
-
-    if type(graph_json) == str:
-        data = loads(graph_json)
-    else:
-        data = graph_json
-
-    graph = nx.node_link_graph(data["graph"])
-    pos = {eval(k): v for k, v in data["pos"].items()}
-    env_type = data["env_type"]
-
-    environment = {
-        "env_type": env_type,
-        "graph": graph,
-        "pos": pos
-        }
-
-    if "shortest_paths" in data.keys():
-        environment["shortest_paths"] = {eval(k): {eval(k2): v2 for k2, v2 in v.items()} for k, v in data["shortest_paths"].items()}
-
-    # -> Add all other fields from the data that is not graph or pos or env_type
-    for key, value in data.items():
-        if key not in environment.keys():
-            environment[key] = value
-
-    return environment
 
 
 def euler_from_quaternion(quat):

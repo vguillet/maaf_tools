@@ -386,7 +386,7 @@ if __name__ == "__main__":
 
     # -------------------------- Save to file
     organisation_model.save_to_file(
-        filename="icare_alloc_config/icare_alloc_config/__CoHoMa_organisation_model_v1.json",
+        filename="icare_alloc_config/icare_alloc_config/__cache/__CoHoMa_organisation_model_v1.json",
         organisation=True,
         role_allocation=True,
         model=True,
@@ -396,12 +396,12 @@ if __name__ == "__main__":
         allocation_specification=True
     )
 
-    with open("icare_alloc_config/icare_alloc_config/__CoHoMa_organisation_model_v1.json", "r") as file:
+    with open("icare_alloc_config/icare_alloc_config/__cache/__CoHoMa_organisation_model_v1.json", "r") as file:
         model = json.load(file)
 
     organisation_model = Organisation.from_dict(item_dict=model)
 
-    print(organisation_model.allocation_specification.get_group_ambassadors("ScoutingTeam_1"))
+    #print(organisation_model.allocation_specification.get_group_ambassadors("ScoutingTeam_1"))
     #organisation_model.plot_team_structure()
 
     # print(organisation_model)
