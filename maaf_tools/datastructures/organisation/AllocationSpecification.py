@@ -44,13 +44,10 @@ class AllocationSpecification(dict, MaafItem):
                 "allocation": []
             }
 
-        elif isinstance(allocation_specification, AllocationSpecification):
+        elif isinstance(allocation_specification, AllocationSpecification) or isinstance(allocation_specification, dict):
             allocation_specification = allocation_specification.copy()
 
-        elif isinstance(allocation_specification, dict):
-            allocation_specification = allocation_specification.copy()
-
-        elif not isinstance(allocation_specification, dict) or not isinstance(allocation_specification, AllocationSpecification):
+        else:
             raise ValueError("The allocation specification must be a dictionary or AllocationSpecification object.")
 
         # Initialize the underlying dict with the provided or default dictionary.
@@ -63,6 +60,9 @@ class AllocationSpecification(dict, MaafItem):
         self.__role_allocation = None
         self.role_allocation = role_allocation
 
+    def __repr__(self):
+        """Returns a string representation of the AllocationSpecification object."""
+        return f"AllocationSpecification with {len(self.role_allocation)} allocations and MOISE model: {self.moise_model_available}"
 
     # ============================================================== Properties
     @property

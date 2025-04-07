@@ -49,8 +49,12 @@ class Organisation(MaafItem):
 
     def __repr__(self):
         """Returns a string representation of the organisation."""
-        string = f"MOISE+ Model:\n  > {self.moise_model}" \
-                 f"Role allocation:\n  {self.role_allocation}"
+        string = (f"Organisation with: "
+                  f"\n  > {self.fleet}"
+                  f"\n  > {self.moise_model}"
+                  f"\n  > {self.role_allocation}"
+                  f"\n  > {self.allocation_specification}"
+                 )
 
         return string
 
@@ -272,7 +276,8 @@ class Organisation(MaafItem):
          """
 
          return cls(
-             moise_model=MoiseModel(item_dict["moise_model"]),
+             fleet=item_dict["fleet"],
+             moise_model=item_dict["moise_model"],
              role_allocation=item_dict["role_allocation"],
              allocation_specification=item_dict["allocation_specification"]
          )
@@ -400,6 +405,8 @@ if __name__ == "__main__":
         model = json.load(file)
 
     organisation_model = Organisation.from_dict(item_dict=model)
+
+    print(organisation_model)
 
     #print(organisation_model.allocation_specification.get_group_ambassadors("ScoutingTeam_1"))
     #organisation_model.plot_team_structure()

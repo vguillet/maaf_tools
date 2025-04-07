@@ -40,6 +40,12 @@ class RoleAllocation(dict, MaafItem):
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(role_allocation)
 
+    def __repr__(self):
+        """
+        Returns a string representation of the RoleAllocation object.
+        """
+        return f"RoleAllocation with {len(self.get('group_instances', []))} group instances and {len(self.get('team', []))} team members."
+
     # ============================================================== Properties
 
     # ============================================================== Check

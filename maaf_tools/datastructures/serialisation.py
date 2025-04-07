@@ -270,7 +270,10 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
     field_names = {field.name for field in item_fields}
 
     # -> Extract types from the dictionary
-    fields_types = item_dict.pop("field_types")
+    try:
+        fields_types = item_dict.pop("field_types")
+    except KeyError:
+        pass
 
     if not partial:
         # -> Check if all required fields are present in the dictionary

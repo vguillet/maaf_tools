@@ -7,7 +7,28 @@ import pandas as pd
 import json
 import orjson
 
+from pyproj import Transformer
 from rclpy.time import Time
+
+
+def convert_graph_gps_to_ecef(graph_data: dict) -> dict:
+    # Create a transformer to convert from WGS84 (EPSG:4326) to ECEF (EPSG:4978)
+    transformer = Transformer.from_crs("EPSG:4326", "EPSG:4978", always_xy=True)
+
+    # Iterate over each node in the graph.
+    for node in graph_data["graph"]["nodes"]:
+        metadata = node.get("metadata", {})
+        lat = metadata.get("latitude")
+        lon = metadata.get("longitude")
+        alt = metadata.get("altitude", 0.0)  # Default altitude to 0 if not provided.
+
+        # Only perform conversion if latitude and longitude are provided.
+        if lat is not None and lon is not None:
+            # Transformer expects (longitude, latitude, altitude)
+            x, y, z = transformer.transform(lon, lat, alt)
+            node["pos"] = (x, y, z)
+
+    return graph_data
 
 
 def euler_from_quaternion(quat):

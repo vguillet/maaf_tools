@@ -113,7 +113,7 @@ class MaafItem(ABC):
 
         return item
 
-    def to_json(self, indent=2):
+    def to_json(self, indent: int = 2):
         """
         Serializes the dataclass instance to a JSON string.
 
