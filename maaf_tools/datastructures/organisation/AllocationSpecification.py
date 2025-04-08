@@ -34,7 +34,7 @@ ABSTRACT_AUCTION_ROLES = {
 
 class AllocationSpecification(dict, MaafItem):
     def __init__(self,
-                 allocation_specification: dict or None = None,
+                 allocation_specification: dict or "AllocationSpecification" = None,
                  moise_model: dict or None = None,
                  role_allocation: dict or None = None,
                  ):
@@ -217,30 +217,32 @@ class AllocationSpecification(dict, MaafItem):
         :param group_id: The ID of the group.
         :return: Hierarchy level (e.g., "P1", "P2", "Captain", etc...).
         """
-        raise NotImplementedError("This method is not implemented yet.")
+        warnings.warn("This method is not implemented yet. Returning 1 as placeholder") # TODO: Implement string based hierarchy
+
+        return 1
 
     @moise_model_check
-    def get_task_bidding_logic(self, task_id: str) -> callable:
+    def get_task_bidding_logic(self, task_type: str) -> callable:
         """
         Get the bidding logic for a specific task ID.
 
-        :param task_id: The ID of the task.
+        :param task_type: The type of the task.
         :return: Bidding logic (function or callable).
         """
         # -> Get the task
-        task = self.moise_model.functional_specification.get_goal(goal_id=task_id)
+        task = self.moise_model.functional_specification.get_goal(goal_type=task_type)
 
         if task is None:
-            raise ValueError(f"Task ID '{task_id}' not found in the functional specification.")
+            raise ValueError(f"Task type '{task_type}' not found in the functional specification.")
 
         # -> Get the bidding logic
         bidding_logic = task.get("bidding_logic", None)
 
         if bidding_logic is None:
-            raise ValueError(f"Bidding logic not found for task ID '{task_id}'.")
+            raise ValueError(f"Bidding logic not found for task type '{task_type}'.")
 
         elif bidding_logic not in bidding_logics_dict:
-            raise ValueError(f"Bidding logic {bidding_logic} not found for task ID '{task_id}'.")
+            raise ValueError(f"Bidding logic {bidding_logic} not found for task type '{task_type}'.")
 
         # -> Return the bidding logic function
         return bidding_logics_dict[bidding_logic]
@@ -270,6 +272,77 @@ class AllocationSpecification(dict, MaafItem):
 
     # ============================================================== Set
 
+    # ============================================================== Merge
+    def merge(self, allocation_specification: "AllocationSpecification", prioritise_local: bool = True) -> bool:
+        """
+        Merges the current AllocationSpecification with another one.
+
+        The merging is performed as follows:
+          - For the allocation data (the list stored under the "allocation" key):
+              • For each incoming allocation entry, if a matching entry exists in the local specification
+                (matched by the "id" field when available or by equality), then:
+                   - If prioritise_local is True, the local entry is kept.
+                   - Otherwise (if prioritise_local is False) the local entry is replaced by the incoming one.
+              • If no matching allocation is found, the incoming allocation entry is appended.
+          - If both AllocationSpecifications have MOISE models and RoleAllocations defined, their own
+            merge methods are called accordingly.
+
+        :param allocation_specification: An AllocationSpecification instance to merge with.
+        :param prioritise_local: If True, the local entries are kept on conflict;
+                                  if False, incoming entries replace local ones.
+        :return: True if the merge completes successfully.
+        :raises ValueError: If the allocation_specification object is not an AllocationSpecification.
+        """
+        if not isinstance(allocation_specification, AllocationSpecification):
+            raise ValueError("The object to merge must be an AllocationSpecification instance.")
+
+        # Merge the underlying allocation data.
+        # If the allocation specification dictionary does not have an "allocation" key,
+        # default to an empty list.
+        local_allocations = self.get("allocation", [])
+        incoming_allocations = allocation_specification.get("allocation", [])
+
+        # Create a helper lookup for local allocations.
+        # We assume that if an allocation item has an "id" field, that uniquely identifies it.
+        def find_local(allocation_item):
+            if "id" in allocation_item:
+                for idx, loc in enumerate(local_allocations):
+                    if isinstance(loc, dict) and loc.get("id") == allocation_item["id"]:
+                        return idx
+            # Fallback: if no "id" exists, try to match by complete equality.
+            for idx, loc in enumerate(local_allocations):
+                if loc == allocation_item:
+                    return idx
+            return None
+
+        for incoming in incoming_allocations:
+            idx = find_local(incoming)
+            if idx is not None:
+                # A matching allocation is found.
+                if not prioritise_local:
+                    # Replace the local allocation with the incoming one.
+                    local_allocations[idx] = incoming
+                # If prioritising local, we keep the current entry—do nothing.
+            else:
+                # No matching allocation was found; add the incoming allocation.
+                local_allocations.append(incoming)
+
+        # Update the "allocation" key with the merged list.
+        self["allocation"] = local_allocations
+
+        # Merge sub-components if possible.
+        # Merge the MOISE model subcomponent.
+        if self.moise_model_available and allocation_specification.moise_model is not None:
+            if hasattr(self.moise_model, "merge"):
+                self.moise_model.merge(allocation_specification.moise_model, prioritise_local=prioritise_local)
+
+        # Merge the role allocation subcomponent.
+        if self.role_allocation is not None and allocation_specification.role_allocation is not None:
+            if hasattr(self.role_allocation, "merge"):
+                self.role_allocation.merge(allocation_specification.role_allocation, prioritise_local=prioritise_local)
+
+        return True
+
     # ============================================================== Add
 
     # ============================================================== Remove
@@ -280,3 +353,74 @@ class AllocationSpecification(dict, MaafItem):
         Returns the structural specification as a dictionary.
         """
         return self
+
+
+if __name__ == "__main__":
+    # --- Test data for the allocation list ---
+
+    # Local allocation specification contains two entries.
+    local_alloc_spec_dict = {
+        "allocation": [
+            {"id": "a1", "detail": "Local detail 1"},
+            {"id": "a2", "detail": "Local detail 2"}
+        ]
+    }
+
+    # Incoming allocation specification contains two entries:
+    # one having the same id ("a1") as an existing local allocation (but with different detail),
+    # and one new entry ("a3").
+    incoming_alloc_spec_dict = {
+        "allocation": [
+            {"id": "a1", "detail": "Incoming detail for a1"},
+            {"id": "a3", "detail": "Incoming detail 3"}
+        ]
+    }
+
+    # Create AllocationSpecification objects.
+    local_spec = AllocationSpecification(local_alloc_spec_dict)
+    incoming_spec = AllocationSpecification(incoming_alloc_spec_dict)
+
+    #####################################################################
+    # Test 1: Merge with prioritise_local = True
+    #####################################################################
+    print("== Test 1: Merge with prioritise_local=True ==")
+    result = local_spec.merge(incoming_spec, prioritise_local=True)
+    assert result is True, "Merge did not return True for prioritise_local=True."
+
+    # After merge with prioritise_local=True:
+    # - The "a1" entry should keep its local value.
+    # - The "a2" entry remains.
+    # - The new "a3" entry is appended.
+    allocations = local_spec.get("allocation", [])
+    alloc_by_id = {entry["id"]: entry for entry in allocations}
+
+    assert alloc_by_id["a1"]["detail"] == "Local detail 1", (
+        "Local entry for 'a1' was changed even though prioritise_local=True."
+    )
+    assert "a2" in alloc_by_id, "Entry 'a2' is missing after merge."
+    assert "a3" in alloc_by_id, "New entry 'a3' was not added in the merge (prioritise_local=True)."
+    print("Test 1 passed.")
+
+    #####################################################################
+    # Test 2: Merge with prioritise_local = False
+    #####################################################################
+    print("== Test 2: Merge with prioritise_local=False ==")
+    # Reinitialize the local allocation specification.
+    local_spec = AllocationSpecification(local_alloc_spec_dict)
+    result = local_spec.merge(incoming_spec, prioritise_local=False)
+    assert result is True, "Merge did not return True for prioritise_local=False."
+
+    # Now, with prioritise_local=False:
+    # - The "a1" local entry should be replaced by the incoming entry.
+    # - "a2" remains unchanged, and "a3" is appended.
+    allocations = local_spec.get("allocation", [])
+    alloc_by_id = {entry["id"]: entry for entry in allocations}
+
+    assert alloc_by_id["a1"]["detail"] == "Incoming detail for a1", (
+        "Local entry for 'a1' was not replaced when prioritise_local=False."
+    )
+    assert "a2" in alloc_by_id, "Entry 'a2' is missing after merge with prioritise_local=False."
+    assert "a3" in alloc_by_id, "New entry 'a3' was not added in the merge (prioritise_local=False)."
+    print("Test 2 passed.")
+
+    print("All AllocationSpecification merge tests passed.")

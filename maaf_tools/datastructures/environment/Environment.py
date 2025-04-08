@@ -9,6 +9,9 @@ import warnings
 import networkx as nx
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
+# Suppress FutureWarning messages
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.tools import loads, dumps
@@ -124,7 +127,7 @@ class Environment(MaafItem):
             return None
 
     @property
-    def pos(self):
+    def pos3D(self):
         """
         Get the positions of the nodes in the graph.
 
@@ -132,6 +135,20 @@ class Environment(MaafItem):
         """
         if isinstance(self.graph, nx.Graph):
             return nx.get_node_attributes(self.graph, "pos")
+        else:
+            return None
+
+    @property
+    def pos2D(self):
+        """
+        Get the 2D positions of the nodes in the graph (3d pos minus the last element).
+
+        :return: The 2D positions of the nodes in the graph.
+        """
+        if isinstance(self.graph, nx.Graph):
+            pos3D = nx.get_node_attributes(self.graph, "pos")
+            pos2D = {k: v[:-1] for k, v in pos3D.items()}
+            return pos2D
         else:
             return None
 
@@ -232,7 +249,7 @@ class Environment(MaafItem):
         :param recompute_all_shortest_paths: Whether to recompute all shortest paths.
         :return: A dictionary containing all shortest paths.
         """
-        if recompute_all_shortest_paths:
+        if recompute_all_shortest_paths or self.shortest_paths is None:
             self.shortest_paths = dict()
 
         for node in self.graph.nodes:

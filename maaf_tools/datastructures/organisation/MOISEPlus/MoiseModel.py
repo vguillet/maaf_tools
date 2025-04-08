@@ -88,10 +88,85 @@ class MoiseModel(MaafItem):
     # ============================================================== Properties
 
     # ============================================================== Check
+    def check_model_definition(self, stop_at_first_error: bool = False, verbose: int = 1) -> bool:
+        """
+        Checks the validity of the MOISEPlus model. Check is performed on the following aspects:
+          - Structural Specification: Checks roles, role relations, and groups.
+          - Functional Specification: Checks social schemes (goals, plans, missions, and preferences).
+          - Deontic Specification: Checks permissions and obligations.
+
+        :param stop_at_first_error: If True, stops checking at the first error found.
+        :param verbose: If 0, no output; if 1, prints errors; if 2, prints warnings.
+        :return: True if the model is valid, False otherwise.
+        """
+
+        # Check each specification and collect errors.
+        structural_spec_valid = self.structural_specification.check_specification_definition(
+            structural_specification=self.structural_specification,
+            stop_at_first_error=stop_at_first_error,
+            verbose=verbose
+        )
+
+        functional_spec_valid = self.functional_specification.check_specification_definition(
+            functional_specification=self.functional_specification,
+            stop_at_first_error=stop_at_first_error,
+            verbose=verbose
+        )
+        deontic_spec_valid = self.deontic_specification.check_specification_definition(
+            deontic_specification=self.deontic_specification,
+            stop_at_first_error=stop_at_first_error,
+            verbose=verbose
+        )
+
+        # Combine errors from all specifications.
+        return structural_spec_valid and functional_spec_valid and deontic_spec_valid
 
     # ============================================================== Get
 
     # ============================================================== Set
+
+    # ============================================================== Merge
+    def merge(self, moise_model: "MoiseModel", prioritise_local: bool = True) -> bool:
+        """
+        Merges the current MOISEPlus model with anmoise_model one.
+        Merging is performed separately on each of the three specifications:
+          - StructuralSpecification,
+          - FunctionalSpecification, and
+          - DeonticSpecification.
+
+        For each sub-specification, if prioritise_local is True the local values take precedence;
+        if False, the incoming model’s values override local values.
+
+        Cross-references between specifications are re-established after merging.
+
+        :param moise_model: A MoiseModel instance to merge into the current model.
+        :param prioritise_local: If True, keep local entries on conflict; if False, override with incoming entries.
+        :return: True if the merged model is valid.
+        :raises ValueError: If the incoming object is not a MoiseModel.
+        """
+        if not isinstance(moise_model, MoiseModel):
+            raise ValueError("The model to merge must be a MoiseModel object.")
+
+        # Merge each specification using their own merge methods.
+        self.structural_specification.merge(moise_model.structural_specification, prioritise_local=prioritise_local)
+        self.functional_specification.merge(moise_model.functional_specification, prioritise_local=prioritise_local)
+        self.deontic_specification.merge(moise_model.deontic_specification, prioritise_local=prioritise_local)
+
+        # Re-establish the cross-references among the specifications.
+        self.structural_specification.functional_specification = self.functional_specification
+        self.structural_specification.deontic_specification = self.deontic_specification
+
+        self.functional_specification.structural_specification = self.structural_specification
+        self.functional_specification.deontic_specification = self.deontic_specification
+
+        self.deontic_specification.structural_specification = self.structural_specification
+        self.deontic_specification.functional_specification = self.functional_specification
+
+        # Validate the entire merged model
+        if not self.check_model_definition(stop_at_first_error=True, verbose=0):
+            return False
+
+        return True
 
     # ============================================================== Add
 
@@ -283,7 +358,7 @@ class MoiseModel(MaafItem):
         plt.axis('off')
         plt.show()
 
-# -------------------- Example Usage --------------------
+
 if __name__ == "__main__":
     # Create a new MOISEPlus model
     model = MoiseModel()

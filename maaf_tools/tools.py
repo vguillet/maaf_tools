@@ -26,7 +26,8 @@ def convert_graph_gps_to_ecef(graph_data: dict) -> dict:
         if lat is not None and lon is not None:
             # Transformer expects (longitude, latitude, altitude)
             x, y, z = transformer.transform(lon, lat, alt)
-            node["pos"] = (x, y, z)
+            #node["pos"] = (x, y, z)
+            node["pos"] = (x, y)
 
     return graph_data
 

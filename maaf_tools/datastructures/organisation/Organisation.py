@@ -169,6 +169,8 @@ class Organisation(MaafItem):
             raise ValueError("Fleet not set.")
 
         # -> Checking the role allocation against the structural specification
+        #     - Check if the role allocation is valid with respect to the structural specification
+        #     - Check if the role allocation is valid with respect to the agents' skillsets and role skill requirements
         valid_wrt_structural_model = self.moise_model.structural_specification.check_role_allocation(
             role_allocation=self.role_allocation,
             fleet=self.fleet,
@@ -181,6 +183,46 @@ class Organisation(MaafItem):
     # ============================================================== Get
 
     # ============================================================== Set
+
+    # ============================================================== Merge
+    def merge(self, organisation: "Organisation", prioritise_local: bool = True) -> bool:
+        """
+        Merges the current Organisation with another Organisation instance.
+
+        For each sub-component (fleet, moise_model, role_allocation, allocation_specification),
+        the corresponding merge method is called with the given prioritise_local flag. After merging,
+        cross-references between the MOISE model and allocation specification are re‑established.
+
+        :param organisation: Another Organisation instance to merge into this one.
+        :param prioritise_local: If True, existing (local) entries take precedence in case of conflicts;
+                                  otherwise, the incoming values will override local entries.
+        :return: True if merging succeeds.
+        :raises ValueError: If organisation is not an Organisation instance.
+        """
+        if not isinstance(organisation, Organisation):
+            raise ValueError("The model to merge must be an Organisation instance.")
+
+        # Merge each sub-component using its own merge method.
+        self.fleet.merge(organisation.fleet, prioritise_local=prioritise_local)
+        self.moise_model.merge(organisation.moise_model, prioritise_local=prioritise_local)
+        self.role_allocation.merge(organisation.role_allocation, prioritise_local=prioritise_local)
+        self.allocation_specification.merge(organisation.allocation_specification, prioritise_local=prioritise_local)
+
+        # Re-establish cross-references between the MOISE model and its sub-specifications.
+        self.moise_model.structural_specification.functional_specification = self.moise_model.functional_specification
+        self.moise_model.structural_specification.deontic_specification = self.moise_model.deontic_specification
+
+        self.moise_model.functional_specification.structural_specification = self.moise_model.structural_specification
+        self.moise_model.functional_specification.deontic_specification = self.moise_model.deontic_specification
+
+        self.moise_model.deontic_specification.structural_specification = self.moise_model.structural_specification
+        self.moise_model.deontic_specification.functional_specification = self.moise_model.functional_specification
+
+        # Update allocation specification pointers.
+        self.allocation_specification.moise_model = self.moise_model
+        self.allocation_specification.role_allocation = self.role_allocation
+
+        return True
 
     # ============================================================== Add
 
