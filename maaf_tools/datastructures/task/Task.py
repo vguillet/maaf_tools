@@ -30,6 +30,7 @@ class Task(MaafItem):
     id: str
     type: str
     creator: str
+    skill_requirements: list[str]    # List of skills possibly required to complete the task
     instructions: dict[str: str]     # [(skill_ref, task_details_for skill), ...]
 
     # ----- Variable
@@ -177,6 +178,7 @@ if __name__ == "__main__":
         id="task_1",
         type="task",
         creator="agent_1",
+        skill_requirements=["skill_1", "skill_2"],
         instructions={"skill_1": "task_1"},
 
         affiliations=["affiliation_1"],

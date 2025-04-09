@@ -308,7 +308,7 @@ class StructuralSpecification(dict, MaafItem):
 
         return not errors
 
-    def check_agent_role_compatibility(self, agent_skillset: list[str], role: str) -> bool:
+    def check_agent_role_compatibility(self, agent_skillset: list[str], role_name: str) -> bool:
         """
         Check whether an agent skillset is compatible with a given role.
         Compatibility means the agent's skillset includes all required skills for the role and all its ancestors.
@@ -318,19 +318,19 @@ class StructuralSpecification(dict, MaafItem):
         agent_skillset. If the role inherits from another role, the parent's skill requirements are also checked recursively.
 
         :param agent_skillset: (list[str]): A list of skills the agent possesses
-        :param role: (str) The role name to check compatibility for
+        :param role_name: (str) The role name to check compatibility for
 
         :return: (bool) True if the agent's skillset satisfies the role's (and its ancestors') skill requirements; otherwise False.
         """
 
         # Retrieve the role definition from the model.
-        role_def = next((r for r in self["roles"] if r["name"] == role), None)
+        role_def = next((r for r in self["roles"] if r["name"] == role_name), None)
 
         if role_def is None:
-            raise ValueError(f"Role '{role}' is not defined in the model.")
+            raise ValueError(f"Role '{role_name}' is not defined in the model.")
 
         # Get the role's required skills (treating None as an empty list).
-        required_skills = self.deontic_specification.get_role_skill_requirements(role=role)
+        required_skills = self.deontic_specification.get_role_skill_requirements(role_name=role_name)
 
         # Check if all required skills for the role are in the agent's killset.
         for skill in required_skills:

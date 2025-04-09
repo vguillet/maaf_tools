@@ -75,34 +75,60 @@ class DeonticSpecification(dict, MaafItem):
         warnings.warn("Checking deontic specification definition is not implemented yet.")
         return True
 
-    # ============================================================== Get
-    def get_role_skill_requirements(self, role: str) -> list:
+    def check_agent_goal_compatibility(self, agent_roles: list[str], goal_name: str) -> bool:
         """
-        Returns the skill requirements for a given role. The skill requirements are determined based on the
-        goal requirements associated with the missions the role is responsible for (permissions and obligations).
+        Checks if the agent roles are compatible with the goal type.
 
-        :param role: The role for which to retrieve skill requirements.
-        :return : A list of skill requirements for the specified role.
+        :param agent_roles: List of roles associated with the agent.
+        :param goal_name: The goal type to check compatibility with.
+
+        :return: True if compatible, False otherwise.
+        """
+
+        # -> Get missions associated with the goal type
+        missions = self.functional_specification.get_missions_associated_with_goal(goal_name=goal_name, names_only=True)
+
+        # -> Get roles associated with the missions
+        missions_roles = []
+
+        for mission in missions:
+            missions_roles.extend(self.get_role_associated_with_mission(mission_name=mission))
+
+        # -> Check if the agent has at least one role_name associated with the goal type
+        for role_name in agent_roles:
+            if role_name in missions_roles:
+                return True
+
+        return False
+
+    # ============================================================== Get
+    def get_role_skill_requirements(self, role_name: str) -> list[str] or None:
+        """
+        Returns the skill requirements for a given role_name. The skill requirements are determined based on the
+        goal requirements associated with the missions the role_name is responsible for (permissions and obligations).
+
+        :param role_name: The role_name for which to retrieve skill requirements.
+        :return : A list of skill requirements for the specified role_name.
         """
 
         if self.functional_specification is None:
             warnings.warn("Functional specification is not set.")
-            return []
+            return None
 
-        # -> Get all missions associated with the role
+        # -> Get all missions associated with the role_name
         missions = []
         for permission in self["permissions"]:
-            if permission["role"] == role:
-                missions.append(permission["mission"])
+            if permission["role_name"] == role_name:
+                missions.append(permission["mission_name"])
 
         for obligation in self["obligations"]:
-            if obligation["role"] == role:
-                missions.append(obligation["mission"])
+            if obligation["role_name"] == role_name:
+                missions.append(obligation["mission_name"])
 
         # -> Get all goals associated with the missions
         goals = []
-        for mission in missions:
-            mission_spec = self.functional_specification.get_mission(mission)
+        for mission_name in missions:
+            mission_spec = self.functional_specification.get_mission(mission_name)
             if mission_spec is not None:
                 if "goals" in mission_spec:
                     goals.extend(mission_spec["goals"])
@@ -117,6 +143,28 @@ class DeonticSpecification(dict, MaafItem):
         skills = set(skills)
 
         return list(skills)
+
+    def get_role_associated_with_mission(self, mission_name: str) -> list:
+        """
+        Gets the roles associated with a specific mission type.
+
+        :param mission_name: The mission type to check.
+        :return: A list of roles associated with the specified mission type.
+        """
+
+        roles = []
+
+        # Check permissions
+        for permission in self["permissions"]:
+            if permission["mission_name"] == mission_name:
+                roles.append(permission["role_name"])
+
+        # Check obligations
+        for obligation in self["obligations"]:
+            if obligation["mission_name"] == mission_name:
+                roles.append(obligation["role_name"])
+
+        return list(set(roles))
 
     # ============================================================== Set
 
@@ -146,42 +194,42 @@ class DeonticSpecification(dict, MaafItem):
         # ----- Merge Permissions -----
         # Iterate over each incoming permission.
         for incoming_permission in deontic_specification.get("permissions", []):
-            role = incoming_permission.get("role")
-            mission = incoming_permission.get("mission")
-            # Search for an existing permission with the same role and mission.
+            role_name = incoming_permission.get("role_name")
+            mission_name = incoming_permission.get("mission_name")
+            # Search for an existing permission with the same role_name and mission_name.
             existing_permission = next(
                 (perm for perm in self.get("permissions", [])
-                 if perm.get("role") == role and perm.get("mission") == mission), None)
+                 if perm.get("role_name") == role_name and perm.get("mission_name") == mission_name), None)
 
             if existing_permission:
                 # If local is prioritized, do nothing (preserve the local permission).
                 # Otherwise, replace the local permission with the incoming one.
                 if not prioritise_local:
-                    self.remove_permission(role, mission)
-                    self.add_permission(role, mission,
+                    self.remove_permission(role_name, mission_name)
+                    self.add_permission(role_name, mission_name,
                                         time_constraint=incoming_permission.get("time_constraint", "Any"))
             else:
                 # Add new permission from incoming specification.
-                self.add_permission(role, mission,
+                self.add_permission(role_name, mission_name,
                                     time_constraint=incoming_permission.get("time_constraint", "Any"))
 
         # ----- Merge Obligations -----
         # Iterate over each incoming obligation.
         for incoming_obligation in deontic_specification.get("obligations", []):
-            role = incoming_obligation.get("role")
-            mission = incoming_obligation.get("mission")
-            # Find an existing obligation with the same role and mission.
+            role_name = incoming_obligation.get("role_name")
+            mission_name = incoming_obligation.get("mission_name")
+            # Find an existing obligation with the same role_name and mission_name.
             existing_obligation = next(
                 (obl for obl in self.get("obligations", [])
-                 if obl.get("role") == role and obl.get("mission") == mission), None)
+                 if obl.get("role_name") == role_name and obl.get("mission_name") == mission_name), None)
 
             if existing_obligation:
                 if not prioritise_local:
-                    self.remove_obligation(role, mission)
-                    self.add_obligation(role, mission,
+                    self.remove_obligation(role_name, mission_name)
+                    self.add_obligation(role_name, mission_name,
                                         time_constraint=incoming_obligation.get("time_constraint", "Any"))
             else:
-                self.add_obligation(role, mission,
+                self.add_obligation(role_name, mission_name,
                                     time_constraint=incoming_obligation.get("time_constraint", "Any"))
 
         # Final validation of the merged specification.
@@ -191,45 +239,45 @@ class DeonticSpecification(dict, MaafItem):
         return True
 
     # ============================================================== Add
-    def add_permission(self, role, mission, time_constraint="Any"):
+    def add_permission(self, role_name: str, mission_name: str, time_constraint="Any"):
         """
         Adds a permission to the deontic specification.
 
         Args:
-            role (str): The role associated with the permission.
-            mission (str): The mission to which the permission applies.
+            role_name (str): The role_name associated with the permission.
+            mission_name (str): The mission_name to which the permission applies.
             time_constraint (str): The time constraint (default "Any").
         """
-        permission = {"role": role, "mission": mission, "time_constraint": time_constraint}
+        permission = {"role_name": role_name, "mission_name": mission_name, "time_constraint": time_constraint}
         self["permissions"].append(permission)
 
-    def add_obligation(self, role, mission, time_constraint="Any"):
+    def add_obligation(self, role_name, mission_name, time_constraint="Any"):
         """
         Adds an obligation to the deontic specification.
 
         Args:
-            role (str): The role associated with the obligation.
-            mission (str): The mission to which the obligation applies.
+            role_name (str): The role_name associated with the obligation.
+            mission_name (str): The mission_name to which the obligation applies.
             time_constraint (str): The time constraint (default "Any").
         """
-        obligation = {"role": role, "mission": mission, "time_constraint": time_constraint}
+        obligation = {"role_name": role_name, "mission_name": mission_name, "time_constraint": time_constraint}
         self["obligations"].append(obligation)
 
     # ============================================================== Remove
-    def remove_permission(self, role, mission):
+    def remove_permission(self, role_name, mission_name: str):
         """Removes a permission. Return True if the permission was removed, False otherwise."""
 
         for permission in self["permissions"]:
-            if permission["role"] == role and permission["mission"] == mission:
+            if permission["role_name"] == role_name and permission["mission_name"] == mission_name:
                 self["permissions"].remove(permission)
                 return True
         return False
 
-    def remove_obligation(self, role, mission):
+    def remove_obligation(self, role_name, mission_name):
         """Removes an obligation. Return True if the obligation was removed, False otherwise."""
 
         for obligation in self["obligations"]:
-            if obligation["role"] == role and obligation["mission"] == mission:
+            if obligation["role_name"] == role_name and obligation["mission_name"] == mission_name:
                 self["obligations"].remove(obligation)
                 return True
         return False
@@ -242,15 +290,32 @@ class DeonticSpecification(dict, MaafItem):
         return self
 
 if __name__ == "__main__":
+
+    deontic_spec = DeonticSpecification()
+    deontic_spec.add_obligation(role_name="Scout", mission_name="m_scouting")
+    deontic_spec.add_obligation(role_name="Monitor", mission_name="m_monitoring")
+    deontic_spec.add_obligation(role_name="Patroller", mission_name="m_patrolling")
+    deontic_spec.add_obligation(role_name="Obstructor", mission_name="m_interdiction")
+    deontic_spec.add_obligation(role_name="Obstructor", mission_name="m_obstructing")
+    deontic_spec.add_obligation(role_name="Trapper", mission_name="m_interdiction")
+    deontic_spec.add_obligation(role_name="Trapper", mission_name="m_trapping")
+    deontic_spec.add_obligation(role_name="Tracker", mission_name="m_tracking")
+    deontic_spec.add_obligation(role_name="Neutraliser", mission_name="m_neutralising")
+
+    deontic_spec.get_role_skill_requirements("Scout")
+
+    deontic_spec.save_to_file("icare_alloc_config/icare_alloc_config/moise_deontic_specification.json")
+
+    # ========================================================== Tests
     # Define a local deontic specification dictionary.
     local_deontic_spec_dict = {
         "permissions": [
-            {"role": "Scout", "mission": "m_scouting", "time_constraint": "Immediate"},
-            {"role": "Monitor", "mission": "m_monitoring", "time_constraint": "Any"}
+            {"role_name": "Scout", "mission_name": "m_scouting", "time_constraint": "Immediate"},
+            {"role_name": "Monitor", "mission_name": "m_monitoring", "time_constraint": "Any"}
         ],
         "obligations": [
-            {"role": "Patroller", "mission": "m_patrolling", "time_constraint": "Scheduled"},
-            {"role": "Obstructor", "mission": "m_interdiction", "time_constraint": "Any"}
+            {"role_name": "Patroller", "mission_name": "m_patrolling", "time_constraint": "Scheduled"},
+            {"role_name": "Obstructor", "mission_name": "m_interdiction", "time_constraint": "Any"}
         ]
     }
 
@@ -258,15 +323,15 @@ if __name__ == "__main__":
     incoming_deontic_spec_dict = {
         "permissions": [
             # New permission not in local.
-            {"role": "Scout", "mission": "m_recon", "time_constraint": "Urgent"},
-            # Duplicate permission: same role and mission as local, but different time_constraint.
-            {"role": "Scout", "mission": "m_scouting", "time_constraint": "Delayed"}
+            {"role_name": "Scout", "mission_name": "m_recon", "time_constraint": "Urgent"},
+            # Duplicate permission: same role_name and mission_name as local, but different time_constraint.
+            {"role_name": "Scout", "mission_name": "m_scouting", "time_constraint": "Delayed"}
         ],
         "obligations": [
             # New obligation.
-            {"role": "Monitor", "mission": "m_analysis", "time_constraint": "Any"},
-            # Duplicate obligation: same role and mission as local, but different time_constraint.
-            {"role": "Patroller", "mission": "m_patrolling", "time_constraint": "Immediate"}
+            {"role_name": "Monitor", "mission_name": "m_analysis", "time_constraint": "Any"},
+            # Duplicate obligation: same role_name and mission_name as local, but different time_constraint.
+            {"role_name": "Patroller", "mission_name": "m_patrolling", "time_constraint": "Immediate"}
         ]
     }
 
@@ -282,26 +347,26 @@ if __name__ == "__main__":
 
     # Permission ("Scout", "m_scouting") should remain unchanged.
     scout_permission = next(
-        (p for p in local_ds["permissions"] if p["role"] == "Scout" and p["mission"] == "m_scouting"), None)
+        (p for p in local_ds["permissions"] if p["role_name"] == "Scout" and p["mission_name"] == "m_scouting"), None)
     assert scout_permission is not None, "Scout permission for m_scouting not found."
     assert scout_permission["time_constraint"] == "Immediate", \
         "Local permission not preserved when prioritise_local=True (expected 'Immediate')."
 
     # New permission ("Scout", "m_recon") should be added.
     recon_permission = next(
-        (p for p in local_ds["permissions"] if p["role"] == "Scout" and p["mission"] == "m_recon"), None)
+        (p for p in local_ds["permissions"] if p["role_name"] == "Scout" and p["mission_name"] == "m_recon"), None)
     assert recon_permission is not None, "New permission m_recon not added."
 
     # Obligation ("Patroller", "m_patrolling") should remain unchanged.
     patroller_obligation = next(
-        (o for o in local_ds["obligations"] if o["role"] == "Patroller" and o["mission"] == "m_patrolling"), None)
+        (o for o in local_ds["obligations"] if o["role_name"] == "Patroller" and o["mission_name"] == "m_patrolling"), None)
     assert patroller_obligation is not None, "Patroller obligation for m_patrolling not found."
     assert patroller_obligation["time_constraint"] == "Scheduled", \
         "Local obligation not preserved when prioritise_local=True (expected 'Scheduled')."
 
     # New obligation ("Monitor", "m_analysis") should be added.
     monitor_obligation = next(
-        (o for o in local_ds["obligations"] if o["role"] == "Monitor" and o["mission"] == "m_analysis"), None)
+        (o for o in local_ds["obligations"] if o["role_name"] == "Monitor" and o["mission_name"] == "m_analysis"), None)
     assert monitor_obligation is not None, "New obligation m_analysis not added."
 
     print("Test 1 passed.")
@@ -319,48 +384,28 @@ if __name__ == "__main__":
 
     # In this case, the duplicate permission should be replaced.
     scout_permission = next(
-        (p for p in local_ds["permissions"] if p["role"] == "Scout" and p["mission"] == "m_scouting"), None)
+        (p for p in local_ds["permissions"] if p["role_name"] == "Scout" and p["mission_name"] == "m_scouting"), None)
     assert scout_permission is not None, "Scout permission for m_scouting not found."
     assert scout_permission["time_constraint"] == "Delayed", \
         "Permission not replaced when prioritise_local=False (expected 'Delayed')."
 
     # New permission ("Scout", "m_recon") should be added.
     recon_permission = next(
-        (p for p in local_ds["permissions"] if p["role"] == "Scout" and p["mission"] == "m_recon"), None)
+        (p for p in local_ds["permissions"] if p["role_name"] == "Scout" and p["mission_name"] == "m_recon"), None)
     assert recon_permission is not None, "New permission m_recon not added."
 
     # The duplicate obligation for "Patroller" should be replaced.
     patroller_obligation = next(
-        (o for o in local_ds["obligations"] if o["role"] == "Patroller" and o["mission"] == "m_patrolling"), None)
+        (o for o in local_ds["obligations"] if o["role_name"] == "Patroller" and o["mission_name"] == "m_patrolling"), None)
     assert patroller_obligation is not None, "Patroller obligation for m_patrolling not found."
     assert patroller_obligation["time_constraint"] == "Immediate", \
         "Obligation not replaced when prioritise_local=False (expected 'Immediate')."
 
     # New obligation ("Monitor", "m_analysis") should be added.
     monitor_obligation = next(
-        (o for o in local_ds["obligations"] if o["role"] == "Monitor" and o["mission"] == "m_analysis"), None)
+        (o for o in local_ds["obligations"] if o["role_name"] == "Monitor" and o["mission_name"] == "m_analysis"), None)
     assert monitor_obligation is not None, "New obligation m_analysis not added."
 
     print("Test 2 passed.")
 
     print("All tests passed.")
-
-
-# if __name__ == "__main__":
-#
-#     deontic_spec = DeonticSpecification()
-#     deontic_spec.add_obligation(role="Scout", mission="m_scouting")
-#     deontic_spec.add_obligation(role="Monitor", mission="m_monitoring")
-#     deontic_spec.add_obligation(role="Patroller", mission="m_patrolling")
-#     deontic_spec.add_obligation(role="Obstructor", mission="m_interdiction")
-#     deontic_spec.add_obligation(role="Obstructor", mission="m_obstructing")
-#     deontic_spec.add_obligation(role="Trapper", mission="m_interdiction")
-#     deontic_spec.add_obligation(role="Trapper", mission="m_trapping")
-#     deontic_spec.add_obligation(role="Tracker", mission="m_tracking")
-#     deontic_spec.add_obligation(role="Neutraliser", mission="m_neutralising")
-#
-#     #pprint(deontic_spec.asdict())
-#
-#     deontic_spec.get_role_skill_requirements("Scout")
-#
-#     deontic_spec.save_to_file("icare_alloc_config/icare_alloc_config/moise_deontic_specification.json")

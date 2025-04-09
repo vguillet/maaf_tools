@@ -222,27 +222,29 @@ class AllocationSpecification(dict, MaafItem):
         return 1
 
     @moise_model_check
-    def get_task_bidding_logic(self, task_type: str) -> callable:
+    def get_task_bidding_logic(self, goal_name: str) -> callable:
         """
         Get the bidding logic for a specific task ID.
 
-        :param task_type: The type of the task.
+        :param goal_name: The type of the task.
         :return: Bidding logic (function or callable).
         """
         # -> Get the task
-        task = self.moise_model.functional_specification.get_goal(goal_type=task_type)
+        task = self.moise_model.functional_specification.get_goal(goal_name=goal_name)
 
         if task is None:
-            raise ValueError(f"Task type '{task_type}' not found in the functional specification.")
+            raise ValueError(f"Task type '{goal_name}' not found in the functional specification.")
+
+        print(task)
 
         # -> Get the bidding logic
         bidding_logic = task.get("bidding_logic", None)
 
         if bidding_logic is None:
-            raise ValueError(f"Bidding logic not found for task type '{task_type}'.")
+            raise ValueError(f"Bidding logic not found for task type '{goal_name}'.")
 
         elif bidding_logic not in bidding_logics_dict:
-            raise ValueError(f"Bidding logic {bidding_logic} not found for task type '{task_type}'.")
+            raise ValueError(f"Bidding logic {bidding_logic} not found for task type '{goal_name}'.")
 
         # -> Return the bidding logic function
         return bidding_logics_dict[bidding_logic]

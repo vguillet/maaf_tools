@@ -30,6 +30,11 @@ class MoiseModel(MaafItem):
 
     This class provides methods to build the model programmatically, as well as parsers for
     loading from and serializing to JSON, following the provided reference format.
+
+    Naming convention:
+    - item          - a generic term for any entity in the model. Contains all the information related to the item
+    - item_name     - the identifier of the item "type"
+    - item_id       - the unique identifier of an instance of the item
     """
 
     def __init__(self,
