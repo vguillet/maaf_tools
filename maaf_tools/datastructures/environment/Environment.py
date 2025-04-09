@@ -204,9 +204,45 @@ class Environment(MaafItem):
         return True
 
     # ============================================================== Get
+    def get_sequence_shortest_path(self, node_sequence: list[str], compute_missing_paths: bool = True) -> list or None:
+        """
+        Get the shortest path between a sequence of nodes.
+
+        :param node_sequence: Sequence of nodes.
+        :param compute_missing_paths: Whether to compute missing paths if they are not complete.
+        :return: The shortest path between the nodes in the sequence.
+        """
+
+        if len(node_sequence) < 2:
+            raise ValueError("Node sequence must contain at least two nodes.")
+
+        # -> Initialize the path with the first node
+        path = [node_sequence[0]]
+
+        # -> Iterate through the node sequence and compute the shortest paths
+        for i in range(len(node_sequence) - 1):
+            source = node_sequence[i]
+            target = node_sequence[i + 1]
+
+            shortest_path = self.get_shortest_path(
+                source=source,
+                target=target,
+                compute_missing_paths=compute_missing_paths
+                )
+
+            if shortest_path is None:
+                return None
+
+            # -> Add the path to the list
+            path.extend(shortest_path[1:])
+
+        return path
+
     def get_shortest_path(self, source: str, target: str, compute_missing_paths: bool = True) -> list or None:
         """
         Get the shortest path between two nodes.
+
+        # TODO: Add support for path requirements (air/ground etc...)
 
         :param source: Source node.
         :param target: Target node.

@@ -170,99 +170,100 @@ class Plan(MaafItem):
         else:
             return [(self.task_sequence[i], self.task_sequence[i+1]) for i in range(len(self.task_sequence) - 1)]
 
-    def get_path(self,
-                 tasklog: TaskLog,
-                 agent_id: Optional[str] = None,
-                 requirement: Optional[str] = None,
-                 selection: str = "shortest"  # "shortest", "longest", "random"
-                 ) -> (list, list, bool):
-        """
-        Get the full path of the plan.
-
-        :param tasklog: The graph containing the tasks and the paths between them.
-        :param agent_id: The id of the agent for which the path is required.
-        :param requirement: The requirement for the path. Options: "ground", "air", "water", "space"
-        :param selection: The selection method for the path. Options: "shortest", "longest", "random"
-
-        :return: A list of waypoints corresponding to the full path of the plan excluding the starting loc,
-                    a list of missing paths, and a boolean indicating if all paths are present.
-        """
-
-        paths = self.get_paths(
-            agent_id=agent_id,
-            tasklog=tasklog,
-            requirement=requirement,
-            selection=selection
-        )
-
-        full_path = []
-        missing_paths = []
-
-        first_step = True
-
-        if agent_id is not None:
-            node_bundle = [task_id for task_id in self.task_sequence]
-        else:
-            node_bundle = self.task_sequence[1:]
-
-        for task_id in node_bundle:
-            if task_id not in paths.keys():
-                missing_paths.append(task_id)
-
-            elif paths[task_id] is None:
-                missing_paths.append(task_id)
-
-            else:
-                if first_step:
-                    full_path += paths[task_id]["path"]
-                    first_step = False
-                else:
-                    full_path += paths[task_id]["path"][1:]
-
-        if missing_paths:
-            print(f"!!! Plan - path is missing for tasks: {missing_paths} !!!")
-            return full_path, missing_paths, len(missing_paths) == 0
-
-        return full_path, missing_paths, len(missing_paths) == 0
-
-    def get_paths(self,
-                  tasklog: TaskLog,
-                  agent_id: Optional[str] = None,
-                  requirement: Optional[str] = None,
-                  selection: str = "shortest"  # "shortest", "longest", "random"
-                  ) -> dict:
-
-        """
-        Get the path of the plan as a list of waypoints. The path is obtained from the tasks graph, in which
-        the path between two nodes is stored in the corresponding edge.
-
-        :param tasklog: The graph containing the tasks and the paths between them.
-        :param agent_id: The id of the agent for which the path is required.
-        :param requirement: The requirement for the path. Options: "ground", "air", "water", "space"
-        :param selection: The selection method for the path. Options: "shortest", "longest", "random"
-
-        :return: A dictionary containing the task ids as keys and the corresponding paths as values.
-        """
-
-        if agent_id is not None:
-            node_bundle = [agent_id] + [task_id for task_id in self.task_sequence]
-        else:
-            node_bundle = self.task_sequence
-
-        sequence_paths = tasklog.get_sequence_paths(
-            node_sequence=node_bundle,
-            requirement=requirement,
-            selection=selection
-        )
-
-        # print(f"!!! Found paths: {sequence_paths} !!!")
-
-        paths = {}
-
-        for i, task_id in enumerate(node_bundle[1:]):
-            paths[task_id] = sequence_paths[i]
-
-        return paths
+    # TODO: Delete after env management refactor
+    # def get_path(self,
+    #              tasklog: TaskLog,
+    #              agent_id: Optional[str] = None,
+    #              requirement: Optional[str] = None,
+    #              selection: str = "shortest"  # "shortest", "longest", "random"
+    #              ) -> (list, list, bool):
+    #     """
+    #     Get the full path of the plan.
+    #
+    #     :param tasklog: The graph containing the tasks and the paths between them.
+    #     :param agent_id: The id of the agent for which the path is required.
+    #     :param requirement: The requirement for the path. Options: "ground", "air", "water", "space"
+    #     :param selection: The selection method for the path. Options: "shortest", "longest", "random"
+    #
+    #     :return: A list of waypoints corresponding to the full path of the plan excluding the starting loc,
+    #                 a list of missing paths, and a boolean indicating if all paths are present.
+    #     """
+    #
+    #     paths = self.get_paths(
+    #         agent_id=agent_id,
+    #         tasklog=tasklog,
+    #         requirement=requirement,
+    #         selection=selection
+    #     )
+    #
+    #     full_path = []
+    #     missing_paths = []
+    #
+    #     first_step = True
+    #
+    #     if agent_id is not None:
+    #         node_bundle = [task_id for task_id in self.task_sequence]
+    #     else:
+    #         node_bundle = self.task_sequence[1:]
+    #
+    #     for task_id in node_bundle:
+    #         if task_id not in paths.keys():
+    #             missing_paths.append(task_id)
+    #
+    #         elif paths[task_id] is None:
+    #             missing_paths.append(task_id)
+    #
+    #         else:
+    #             if first_step:
+    #                 full_path += paths[task_id]["path"]
+    #                 first_step = False
+    #             else:
+    #                 full_path += paths[task_id]["path"][1:]
+    #
+    #     if missing_paths:
+    #         print(f"!!! Plan - path is missing for tasks: {missing_paths} !!!")
+    #         return full_path, missing_paths, len(missing_paths) == 0
+    #
+    #     return full_path, missing_paths, len(missing_paths) == 0
+    #
+    # def get_paths(self,
+    #               tasklog: TaskLog,
+    #               agent_id: Optional[str] = None,
+    #               requirement: Optional[str] = None,
+    #               selection: str = "shortest"  # "shortest", "longest", "random"
+    #               ) -> dict:
+    #
+    #     """
+    #     Get the path of the plan as a list of waypoints. The path is obtained from the tasks graph, in which
+    #     the path between two nodes is stored in the corresponding edge.
+    #
+    #     :param tasklog: The graph containing the tasks and the paths between them.
+    #     :param agent_id: The id of the agent for which the path is required.
+    #     :param requirement: The requirement for the path. Options: "ground", "air", "water", "space"
+    #     :param selection: The selection method for the path. Options: "shortest", "longest", "random"
+    #
+    #     :return: A dictionary containing the task ids as keys and the corresponding paths as values.
+    #     """
+    #
+    #     if agent_id is not None:
+    #         node_bundle = [agent_id] + [task_id for task_id in self.task_sequence]
+    #     else:
+    #         node_bundle = self.task_sequence
+    #
+    #     sequence_paths = tasklog.get_sequence_paths(
+    #         node_sequence=node_bundle,
+    #         requirement=requirement,
+    #         selection=selection
+    #     )
+    #
+    #     # print(f"!!! Found paths: {sequence_paths} !!!")
+    #
+    #     paths = {}
+    #
+    #     for i, task_id in enumerate(node_bundle[1:]):
+    #         paths[task_id] = sequence_paths[i]
+    #
+    #     return paths
 
     # ============================================================== Serialization / Parsing
 

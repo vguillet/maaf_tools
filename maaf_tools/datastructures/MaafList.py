@@ -361,20 +361,22 @@ class MaafList(MaafItem):
 
         return True
 
-    def remove_item_by_id(self, item_id: str or int) -> None:
+    def remove_item_by_id(self, item_id: str or int) -> bool:
         """
         Remove a item from the item log.
 
         :param item_id: The id of the item to remove from the item log.
+        :return : True if the item was removed, False otherwise.
         """
         # -> Find the item with the given ID
         item = next((t for t in self.items if t.id == item_id), None)
 
         # -> If the item exists, remove it from the item log
         if item:
-            self.remove_item(item)
+            return self.remove_item(item)
         else:
             if DEBUG: print(f"!!! Remove item by id failed: {self.item_class} with id '{item_id}' does not exist in the item log !!!")
+            return False
 
     # ============================================================== Serialization / Parsing
 
