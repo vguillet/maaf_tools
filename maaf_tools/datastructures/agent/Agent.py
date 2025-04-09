@@ -205,24 +205,17 @@ class Agent(MaafItem):
 
         return remove_task_success
 
-    # def update_plan(self,
-    #                 tasklog: TaskLog,
-    #                 selection: str = "shortest"     # "shortest", "longest", "random"
-    #                 ) -> bool:
-    #     """
-    #     Update the plan of the agent with the path obtained from a tasklog.
-    #
-    #     :param tasklog: The tasklog containing the tasks and the paths between them.
-    #     :param selection: The selection method for the path between tasks.
-    #     """
-    #
-    #     return self.plan.update_path(
-    #         tasklog=tasklog,
-    #         selection=selection
-    #     )
     # ============================================================== Get
 
     # ============================================================== Set
+    def set_online_state(self, online: bool = True) -> None:
+        """
+        Set the online state of the agent.
+
+        :param online: Whether the agent is online or not.
+        """
+
+        self.state.online = online
 
     # ============================================================== Merge
     def merge(self,

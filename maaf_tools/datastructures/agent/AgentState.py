@@ -28,6 +28,7 @@ class AgentState(State):
     agent_id: str or int                # The ID of the agent the state is for
 
     # --- Status ---
+    online: bool = False                # Whether the target agent is online or not
     battery_level: float = None         # The battery level of the target agent in percentage
     __min_battery_level: float = 20     # The minimum battery level at which the agent is considered to have low battery
 
@@ -69,7 +70,7 @@ class AgentState(State):
         # -> Check if the agent is stuck
         active *= not self.stuck
 
-        return "active" if active else "inactive"
+        return "active" if active and self.online else "inactive"
 
     # ============================================================== Serialization / Parsing
     def asdf(self) -> pd.DataFrame:
