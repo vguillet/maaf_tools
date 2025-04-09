@@ -5,6 +5,7 @@ import json
 from functools import partial
 from pprint import pprint
 import warnings
+import math
 
 import networkx as nx
 from networkx.algorithms.shortest_paths.generic import shortest_path
@@ -210,7 +211,7 @@ class Environment(MaafItem):
                          x_lim: float or None = None,
                          y_lim: float or None = None,
                          create_new_node: bool = False
-                         ):
+                         ) -> str or None:
         """
         Get the nearest node to a given location. If the location is not in the graph, return None.
         If the location's closest node is past x_lim or y_lim and create_new_node is True, create a new node.
@@ -220,10 +221,55 @@ class Environment(MaafItem):
         :param x_lim: X distance limit for the location.
         :param y_lim: Y distance limit for the location.
         :param create_new_node: Whether to create a new node if the location is past x_lim or y_lim.
-
-        :return: Nearest node or None.
+        :return: Nearest node id (a string) or None.
         """
-        raise NotImplementedError("This method is not implemented yet.")
+        # Ensure that the graph is a proper NetworkX graph.
+        if not isinstance(self.graph, nx.Graph):
+            return None
+
+        # Get the 2D positions (i.e., first two coordinates of each node's 'pos' attribute)
+        positions = self.pos2D
+        if not positions:
+            # Graph is empty: if allowed, add a new node; otherwise, nothing to return.
+            if create_new_node:
+                new_node_id = f"node_{len(self.graph.nodes)}"
+                while new_node_id in self.graph.nodes:
+                    new_node_id = f"node_{len(self.graph.nodes)}"
+                self.graph.add_node(new_node_id, pos=(loc[0], loc[1], 0))
+                return new_node_id
+            else:
+                return None
+
+        nearest_node = None
+        min_dist = float('inf')
+        # These variables will hold the absolute differences in the x and y dimensions.
+        best_dx = best_dy = None
+
+        # Find the node with the minimum Euclidean distance from the given location.
+        for node, pos in positions.items():
+            dx = abs(loc[0] - pos[0])
+            dy = abs(loc[1] - pos[1])
+            dist = math.sqrt(dx * dx + dy * dy)
+            if dist < min_dist:
+                min_dist = dist
+                nearest_node = node
+                best_dx, best_dy = dx, dy
+
+        # Check whether the differences exceed the provided x or y limits.
+        if ((x_lim is not None and best_dx > x_lim) or (y_lim is not None and best_dy > y_lim)):
+            if create_new_node:
+                # Create a new node since the location is too far from any existing node.
+                new_node_id = f"node_{len(self.graph.nodes)}"
+                while new_node_id in self.graph.nodes:
+                    new_node_id = f"node_{len(self.graph.nodes)}"
+                # Add the node with a default z coordinate (0)
+                self.graph.add_node(new_node_id, pos=(loc[0], loc[1], 0))
+                return new_node_id
+            else:
+                return None
+
+        # The nearest node is within the limits, so return it.
+        return nearest_node
 
     def get_loc_sequence_shortest_path(self,
                                        loc_sequence: list[tuple[float, float]],
@@ -304,6 +350,9 @@ class Environment(MaafItem):
 
         :return: The shortest path between the source and target nodes.
         """
+        if source == target:
+            return []
+
         if source not in self.shortest_paths.keys() or target not in self.shortest_paths[source].keys():
             if compute_missing_paths:
                 self.compute_shortest_paths(source=source, target=target)
@@ -466,6 +515,17 @@ class Environment(MaafItem):
         data = loads(json_str)
 
         return cls.from_dict(item_dict=data, partial=partial)
+
+    def cache_shortest_paths_to_file(self):
+        """
+        Cache the shortest paths to a file.
+        """
+        with open("shortest_paths.json", "w") as f:
+            json.dump(self.shortest_paths, f)
+
+    def load_shortest_paths_from_file(self, filename: str):
+        with open(filename, "r") as f:
+            self.shortest_paths = json.load(f)
 
 if __name__ == "__main__":
     # Load graph from JSON

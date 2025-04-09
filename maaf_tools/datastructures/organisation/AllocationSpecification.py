@@ -235,8 +235,6 @@ class AllocationSpecification(dict, MaafItem):
         if task is None:
             raise ValueError(f"Task type '{goal_name}' not found in the functional specification.")
 
-        print(task)
-
         # -> Get the bidding logic
         bidding_logic = task.get("bidding_logic", None)
 
