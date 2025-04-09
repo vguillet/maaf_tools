@@ -73,12 +73,6 @@ class Plan(MaafItem):
         """
         return task_id in self.task_sequence
 
-    # def has_waypoint(self, waypoint_id: str) -> bool:
-    #     """
-    #     Check if the plan has a specific waypoint
-    #     """
-    #     return waypoint_id in self.path
-
     # ============================================================== Add
     def add_task(self, task: Task or str, position: Optional[int] = None) -> bool:
         """

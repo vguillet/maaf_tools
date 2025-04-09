@@ -47,8 +47,6 @@ class Agent(MaafItem):
     state: AgentState                           # State of the agent, state object
     plan: Plan                                  # Plan of the agent, plan object
 
-    #organisation_model: Organisation or None = field(default=None)  # Organisation model of the agent
-
     # local: NestedDict = field(default_factory=NestedDict)   # Local data of the agent, does not get serialized and passed around
     # shared: NestedDict = field(default_factory=NestedDict)  # Shared data of the agent, gets serialized and passed around
 

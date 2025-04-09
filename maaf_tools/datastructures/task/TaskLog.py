@@ -333,12 +333,6 @@ class TaskLog(MaafList):
                 if terminate_task_callback is not None and task_terminated:
                     terminate_task_callback(task=task)
 
-        # ----- Merge task graph
-        self.task_graph.merge(
-            task_graph=tasklog.task_graph,
-            prioritise_local=False   # TODO: Refactor to specify how to prioritise paths in merge
-        )
-
         # -> Call the task state change callback if the task state has changed
         if tasklog_state_change_callback is not None and tasklog_state_change > 0:
             tasklog_state_change_callback()

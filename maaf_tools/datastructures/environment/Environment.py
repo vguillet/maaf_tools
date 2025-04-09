@@ -204,7 +204,61 @@ class Environment(MaafItem):
         return True
 
     # ============================================================== Get
-    def get_sequence_shortest_path(self, node_sequence: list[str], compute_missing_paths: bool = True) -> list or None:
+
+    def get_nearest_node(self,
+                         loc: tuple[float, float],
+                         x_lim: float or None = None,
+                         y_lim: float or None = None,
+                         create_new_node: bool = False
+                         ):
+        """
+        Get the nearest node to a given location. If the location is not in the graph, return None.
+        If the location's closest node is past x_lim or y_lim and create_new_node is True, create a new node.
+        Else, return None.
+
+        :param loc: Location to find the nearest node to.
+        :param x_lim: X distance limit for the location.
+        :param y_lim: Y distance limit for the location.
+        :param create_new_node: Whether to create a new node if the location is past x_lim or y_lim.
+
+        :return: Nearest node or None.
+        """
+        raise NotImplementedError("This method is not implemented yet.")
+
+    def get_loc_sequence_shortest_path(self,
+                                       loc_sequence: list[tuple[float, float]],
+                                       x_lim: float or None = None,
+                                       y_lim: float or None = None,
+                                       create_new_node: bool = False,
+                                       compute_missing_paths: bool = True
+                                       ) -> list or None:
+        """
+        Get the shortest path between a sequence of locations.
+
+        :param loc_sequence: Sequence of locations.
+        :param x_lim: X distance limit for the location.
+        :param y_lim: Y distance limit for the location.
+        :param create_new_node: Whether to create a new node if the location is past x_lim or y_lim.
+        :param compute_missing_paths: Whether to compute missing paths if they are not complete.
+        :return: The shortest path between the locations in the sequence.
+        """
+
+        if len(loc_sequence) < 2:
+            raise ValueError("Location sequence must contain at least two locations.")
+
+        # -> Generate the node sequence from the location sequence
+        node_sequence = []
+
+        for loc in loc_sequence:
+            node = self.get_nearest_node(loc=loc, x_lim=x_lim, y_lim=y_lim, create_new_node=create_new_node)
+            if node is None:
+                raise ValueError(f"Location {loc} is not in the graph.")
+            node_sequence.append(node)
+
+        # -> Get the shortest path between the nodes
+        return self.get_node_sequence_shortest_path(node_sequence=node_sequence, compute_missing_paths=compute_missing_paths)
+
+    def get_node_sequence_shortest_path(self, node_sequence: list[str], compute_missing_paths: bool = True) -> list or None:
         """
         Get the shortest path between a sequence of nodes.
 
