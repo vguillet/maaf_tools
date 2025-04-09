@@ -217,7 +217,7 @@ class AllocationSpecification(dict, MaafItem):
         :param group_id: The ID of the group.
         :return: Hierarchy level (e.g., "P1", "P2", "Captain", etc...).
         """
-        warnings.warn("This method is not implemented yet. Returning 1 as placeholder") # TODO: Implement string based hierarchy
+        #warnings.warn("This method is not implemented yet. Returning 1 as placeholder") # TODO: Implement string based hierarchy
 
         return 1
 
