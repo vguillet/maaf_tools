@@ -230,6 +230,11 @@ class Agent(MaafItem):
         :param prioritise_local: Whether to prioritise the local fields when merging (add only).
 
         :return: A tuple containing the success of the merge and whether the agent has been enabled or disabled.
+            - agent_state_change: Whether the agent state has changed.
+            - agent_plan_change: Whether the agent plan has changed.
+            - agent_enabled: Whether the agent has been enabled.
+            - agent_disabled: Whether the agent has been disabled.
+            Note: The agent_enabled and agent_disabled flags reflect if the agent has been enabled or disabled, not the current state.
         """
 
         # -> Verify if agent is of type Agent
@@ -281,9 +286,9 @@ class Agent(MaafItem):
 
             # ---- Merge state
             if self.state != agent.state:
-                if agent.state.status == "enabled":
+                if agent.state.status == "active" and self.state.status == "inactive":
                     agent_enabled = True
-                elif agent.state.status == "disabled":
+                elif agent.state.status == "inactive" and self.state.status == "active":
                     agent_disabled = True
 
                 self.state = agent.state
@@ -295,7 +300,12 @@ class Agent(MaafItem):
                 agent_state_change = True
                 agent_plan_change = True
 
-        return agent_state_change, agent_plan_change, agent_enabled, agent_disabled
+        return (
+                agent_state_change, # Has the agent state changed?
+                agent_plan_change,  # Has the agent plan changed?
+                agent_enabled,      # Has the agent been enabled?
+                agent_disabled      # Has the agent been disabled?
+                )
 
     # ============================================================== Serialization / Parsing
 

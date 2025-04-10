@@ -182,6 +182,7 @@ class Fleet(MaafList):
               remove_agent_callback: Optional[callable] = None,
               fleet_state_change_callback: Optional[callable] = None,
               prioritise_local: bool = False,
+              logger=None,
               *args, **kwargs
               ) -> bool:
         """
@@ -228,6 +229,7 @@ class Fleet(MaafList):
                 else:
                     self.add_agent(agent=agent)             # Add agent to the fleet
 
+            # -> If the agent is already in the local fleet ...
             else:
                 agent_state_change, agent_plan_change, agent_enabled, agent_disabled = self[agent.id].merge(
                     agent=agent,
@@ -238,9 +240,11 @@ class Fleet(MaafList):
                 if agent_state_change:
                     fleet_state_change += 1
 
+                # -> If the agent is enabled, extend local states with new columns
                 if add_agent_callback is not None and agent_enabled:
                     add_agent_callback(agent=agent)
 
+                # -> If the agent is disabled, remove columns from local states
                 elif remove_agent_callback is not None and agent_disabled:
                     remove_agent_callback(agent=agent)
 
