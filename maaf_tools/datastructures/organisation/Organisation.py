@@ -450,6 +450,11 @@ if __name__ == "__main__":
 
     print(organisation_model)
 
+    # -> Check what tasks can be handled by D_2
+    agent_id = "D_2"
+
+
+
     #print(organisation_model.allocation_specification.get_group_ambassadors("ScoutingTeam_1"))
     #organisation_model.plot_team_structure()
 

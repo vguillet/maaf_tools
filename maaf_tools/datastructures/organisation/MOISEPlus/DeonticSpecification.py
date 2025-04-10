@@ -16,6 +16,10 @@ except:
 
 
 class DeonticSpecification(dict, MaafItem):
+    """
+    A class representing the functional specification of a MOISE+ model.
+    The deontic specification provides the mapping between the roles and the missions they are allowed to perform.
+    """
     def __init__(self,
                  deontic_specification: dict or None = None,
                  structural_specification = None,
@@ -165,6 +169,28 @@ class DeonticSpecification(dict, MaafItem):
                 roles.append(obligation["role_name"])
 
         return list(set(roles))
+
+    def get_missions_associated_with_role(self, role_name: str) -> list:
+        """
+        Gets the missions associated with a specific role_name.
+
+        :param role_name: The role_name to check.
+        :return: A list of missions associated with the specified role_name.
+        """
+
+        missions = []
+
+        # Check permissions
+        for permission in self["permissions"]:
+            if permission["role_name"] == role_name:
+                missions.append(permission["mission_name"])
+
+        # Check obligations
+        for obligation in self["obligations"]:
+            if obligation["role_name"] == role_name:
+                missions.append(obligation["mission_name"])
+
+        return list(set(missions))
 
     # ============================================================== Set
 

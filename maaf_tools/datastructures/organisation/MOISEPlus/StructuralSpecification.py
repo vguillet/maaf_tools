@@ -19,6 +19,10 @@ SCOPES = ["inter", "intra", "omni"]
 
 
 class StructuralSpecification(dict, MaafItem):
+    """
+    A class representing the structural specification of a MOISE+ model.
+    The structural specification defines the roles, role relations, and groups within the model.
+    """
     def __init__(self,
                  structural_specification: dict or "StructuralSpecification" = None,
                  functional_specification = None,
@@ -679,27 +683,27 @@ class StructuralSpecification(dict, MaafItem):
             return True
 
     # ============================================================== Get
-    def get_group_by_id(self, group_id: str):
+    def get_group(self, name: str):
         """
-        Returns the group specification by ID.
+        Returns the group specification by name.
 
-        :param group_id: The ID of the group.
+        :param name: The name of the group.
         :return: A dictionary with the group specification.
         """
         for group in self["groups"]:
-            if group["id"] == group_id:
+            if group["name"] == name:
                 return group
         return None
 
-    def get_role_by_id(self, role_id: str):
+    def get_role(self, name: str):
         """
-        Returns the role specification by ID.
+        Returns the role specification by name.
 
-        :param role_id: The ID of the role.
+        :param name: The ID of the role.
         :return: A dictionary with the role specification.
         """
         for role in self["roles"]:
-            if role["id"] == role_id:
+            if role["name"] == name:
                 return role
         return None
 

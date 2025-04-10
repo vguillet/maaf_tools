@@ -19,6 +19,10 @@ except:
 
 
 class FunctionalSpecification(dict, MaafItem):
+    """
+    A class representing the functional specification of a MOISE+ model.
+    The functional specification provides the mapping between the system's goals, plans, and missions.
+    """
     def __init__(self,
                  functional_specification: dict or "FunctionalSpecification" = None,
                  structural_specification = None,
@@ -192,6 +196,25 @@ class FunctionalSpecification(dict, MaafItem):
             return [mission["name"] for mission in missions]
         else:
             return missions
+
+    def get_goals_associated_with_mission(self, mission_name: str, names_only: bool = False):
+        """
+        Returns a list of goals associated with a given mission name.
+
+        :param mission_name: The name of the mission.
+        :param names_only: If True, return only the names of the goals.
+        :return: A list of goal dictionaries associated with the specified mission name.
+        """
+        goals = []
+        for scheme in self["social_schemes"]:
+            for mission in scheme["missions"]:
+                if mission["name"] == mission_name:
+                    goals.extend(mission.get("goals", []))
+
+        if names_only:
+            return goals
+        else:
+            return [self.get_goal(goal) for goal in goals]
 
     # ============================================================== Set
     # ============================================================== Merge

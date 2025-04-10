@@ -126,7 +126,24 @@ class MoiseModel(MaafItem):
         # Combine errors from all specifications.
         return structural_spec_valid and functional_spec_valid and deontic_spec_valid
 
+    def agent_can_play_role(self, agent_id: str, role_name: str):
+        raise NotImplementedError("This method is not implemented yet.")
+
+    def agent_can_handle_mission_type(self, agent_id: str, mission_name: str):
+        raise NotImplementedError("This method is not implemented yet.")
+
+    def agent_can_handle_goal_type(self, agent_id: str, goal_name: str):
+        raise NotImplementedError("This method is not implemented yet.")
+
     # ============================================================== Get
+    def get_roles_played_by_agent(self, agent_id: str):
+        raise NotImplementedError("This method is not implemented yet.")
+
+    def get_missions_handled_by_agent(self, agent_id: str):
+        raise NotImplementedError("This method is not implemented yet.")
+
+    def get_goals_handled_by_agent(self, agent_id: str):
+        raise NotImplementedError("This method is not implemented yet.")
 
     # ============================================================== Set
 
