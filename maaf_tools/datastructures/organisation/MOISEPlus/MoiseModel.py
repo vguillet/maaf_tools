@@ -3,6 +3,7 @@
 
 import json
 from pprint import pprint
+import warnings
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
@@ -126,9 +127,292 @@ class MoiseModel(MaafItem):
         # Combine errors from all specifications.
         return structural_spec_valid and functional_spec_valid and deontic_spec_valid
 
-    # ============================================================== Set
+    def check_agent_goal_compatibility(self, agent_skillset: list[str], goal_name: str) -> bool:
+        """
+        Checks if the agent's skillset is compatible with the goal's skill requirements.
+
+        :param agent_skillset: The skillset of the agent.
+        :param goal_name: The name of the goal.
+        :return: True if compatible, False otherwise.
+        """
+        # -> Get the goal's skill requirements
+        goal_skill_requirements = self.get_goal_skill_requirements(goal_name=goal_name)
+
+        # -> Check if the agent's skillset meets the goal's skill requirements
+        for skill in goal_skill_requirements:
+            if skill not in agent_skillset:
+                return False
+
+        return True
+
+    def check_agent_mission_compatibility(self, agent_skillset: list[str], mission_name: str) -> bool:
+        """
+        Checks if the agent's skillset is compatible with all of the mission's goals.
+
+        :param agent_skillset: The skillset of the agent.
+        :param mission_name: The name of the mission.
+
+        :return: True if compatible, False otherwise.
+        """
+
+        # -> Get the mission's skill requirements
+        mission_skill_requirements = self.get_mission_skill_requirements(mission_name=mission_name)
+
+        # -> Check if the agent's skillset meets the mission's skill requirements
+        for goal_skill_requirements in mission_skill_requirements:
+            for skill in goal_skill_requirements:
+                if skill not in agent_skillset:
+                    return False
+
+        return True
+
+    def check_agent_role_compatibility(self, agent_skillset: list[str], role_name: str) -> bool:
+        """
+        Check whether an agent skillset is compatible with a given role.
+        Compatibility means the agent's skillset includes all required skills for the role and all its ancestors.
+
+        The method looks up the role in the structural specification (self.structural_specification["roles"])
+        and verifies that all skills listed in the role's "skill_requirements" (if any) are present in the
+        agent_skillset. If the role inherits from another role, the parent's skill requirements are also checked recursively.
+
+        :param agent_skillset: (list[str]): A list of skills the agent possesses
+        :param role_name: (str) The role name to check compatibility for
+
+        :return: (bool) True if the agent's skillset satisfies the role's (and its ancestors') skill requirements; otherwise False.
+        """
+
+        # Retrieve the role definition from the model.
+        role_def = next((r for r in self.structural_specification["roles"] if r["name"] == role_name), None)
+
+        if role_def is None:
+            raise ValueError(f"Role '{role_name}' is not defined in the model.")
+
+        # Get the role's required skills (treating None as an empty list).
+        required_skills = self.get_role_skill_requirements(role_name=role_name)
+
+        # Check if all required skills for the role are in the agent's killset.
+        for skill in required_skills:
+            if skill not in agent_skillset:
+                return False
+
+        # If the role inherits from a parent role, recursively check parent's compatibility.
+        parent_role = role_def.get("inherits")
+        if parent_role:
+            if not self.check_agent_role_compatibility(agent_skillset, parent_role):
+                return False
+
+        return True
+
+    # ============================================================== Get
+    # ----- Skill requirements
+    def get_goal_skill_requirements(self, goal_name: str, verbose: int = 1) -> list[str] or None:
+        """
+        Returns the skill requirements for a given goal.
+
+        :param goal_name: The name of the goal.
+        :param verbose: Verbosity level (0: no output, 1: print warnings).
+        :return: A list of skill requirements for the specified goal, or None if goal is not found.
+        """
+        goal = self.functional_specification.get_goal(goal_name)
+        if goal is not None:
+            return goal.get("skill_requirements", [])
+        else:
+            if verbose > 0: warnings.warn(f"Goal with name '{goal_name}' not found in the functional specification.")
+            return None
+
+    def get_mission_skill_requirements(self, mission_name: str, verbose: int = 1) -> list[str] or None:
+        """
+        Returns the skill requirements for a given mission.
+
+        :param mission_name: The name of the mission.
+        :param verbose: Verbosity level (0: no output, 1: print warnings).
+        :return: A list of skill requirements for the specified mission, or None if mission is not found.
+        """
+        mission = self.functional_specification.get_mission(mission_name)
+        if mission is not None:
+            return [self.get_goal_skill_requirements(goal) for goal in mission.get("goals", [])]
+        else:
+            if verbose > 0: warnings.warn(f"Mission with name '{mission_name}' not found in the functional specification.")
+            return None
+
+    def get_role_skill_requirements(self, role_name: str) -> list[str] or None:
+        """
+        Returns the skill requirements for a given role_name. The skill requirements are determined based on the
+        goal requirements associated with the missions the role_name is responsible for (permissions and obligations).
+
+        :param role_name: The role_name for which to retrieve skill requirements.
+        :return : A list of skill requirements for the specified role_name.
+        """
+
+        if self.functional_specification is None:
+            warnings.warn("Functional specification is not set.")
+            return None
+
+        # -> Get all missions associated with the role_name
+        missions = []
+        for permission in self.deontic_specification["permissions"]:
+            if permission["role_name"] == role_name:
+                missions.append(permission["mission_name"])
+
+        for obligation in self.deontic_specification["obligations"]:
+            if obligation["role_name"] == role_name:
+                missions.append(obligation["mission_name"])
+
+        # -> Get all goals associated with the missions
+        goals = []
+        for mission_name in missions:
+            mission_spec = self.functional_specification.get_mission(mission_name)
+            if mission_spec is not None:
+                if "goals" in mission_spec:
+                    goals.extend(mission_spec["goals"])
+
+        goals = set(goals)
+
+        # -> Get all skills associated with the goals
+        skills = []
+        for goal in goals:
+            skills.extend(self.get_goal_skill_requirements(goal))
+
+        skills = set(skills)
+
+        return list(skills)
+
+    # ----- Mappings parsing
+    # Goals to [...]
+    def get_goals_associated_with_role(self, role_name: str) -> list:
+        """
+        Gets the goals associated with a specific role_name.
+
+        :param role_name: The role_name to check.
+        :return: A list of goals associated with the specified role_name.
+        """
+
+        # -> Gather all missions associated with the role_name
+        missions = self.get_missions_associated_with_role(role_name=role_name)
+
+        # -> Get all goals associated with the missions
+        goals = []
+        for mission_name in missions:
+            goals.extend(self.get_goals_associated_with_mission(mission_name=mission_name))
+
+        # -> Remove duplicates
+        goals = list(set(goals))
+
+        return goals
+
+        # ============================================================== Set
+
+    def get_goals_associated_with_mission(self, mission_name: str, names_only: bool = False):
+        """
+        Returns a list of goals associated with a given mission name.
+
+        :param mission_name: The name of the mission.
+        :param names_only: If True, return only the names of the goals.
+        :return: A list of goal dictionaries associated with the specified mission name.
+        """
+        goals = []
+        for scheme in self.functional_specification["social_schemes"]:
+            for mission in scheme["missions"]:
+                if mission["name"] == mission_name:
+                    goals.extend(mission.get("goals", []))
+
+        if names_only:
+            return goals
+        else:
+            return [self.functional_specification.get_goal(goal) for goal in goals]
+
+    # Missions to [...]
+    def get_missions_associated_with_role(self, role_name: str) -> list:
+        """
+        Gets the missions associated with a specific role_name.
+
+        :param role_name: The role_name to check.
+        :return: A list of missions associated with the specified role_name.
+        """
+
+        missions = []
+
+        # Check permissions
+        for permission in self.deontic_specification["permissions"]:
+            if permission["role_name"] == role_name:
+                missions.append(permission["mission_name"])
+
+        # Check obligations
+        for obligation in self.deontic_specification["obligations"]:
+            if obligation["role_name"] == role_name:
+                missions.append(obligation["mission_name"])
+
+        # -> Remove duplicates
+        missions = list(set(missions))
+
+        return missions
+
+    def get_missions_associated_with_goal(self, goal_name: str, names_only: bool = False):
+        """
+        Returns a list of missions associated with a given goal name.
+
+        :param goal_name: The name of the goal.
+        :param names_only: If True, return only the names of the missions.
+        :return: A list of mission dictionaries associated with the specified goal name.
+        """
+        missions = []
+        for scheme in self.functional_specification["social_schemes"]:
+            for mission in scheme["missions"]:
+                if goal_name in mission.get("goals", []):
+                    missions.append(mission)
+
+        if names_only:
+            return [mission["name"] for mission in missions]
+        else:
+            return missions
+
+    # Roles to [...]
+    def get_roles_associated_with_mission(self, mission_name: str) -> list:
+        """
+        Gets the roles associated with a specific mission type.
+
+        :param mission_name: The mission type to check.
+        :return: A list of roles associated with the specified mission type.
+        """
+
+        roles = []
+
+        # Check permissions
+        for permission in self.deontic_specification["permissions"]:
+            if permission["mission_name"] == mission_name:
+                roles.append(permission["role_name"])
+
+        # Check obligations
+        for obligation in self.deontic_specification["obligations"]:
+            if obligation["mission_name"] == mission_name:
+                roles.append(obligation["role_name"])
+
+        return list(set(roles))
+
+    def get_roles_associated_with_goal(self, goal_name: str) -> list:
+        """
+        Gets the roles associated with a specific goal.
+
+        :param goal_name: The goal name to check.
+        :return: A list of roles associated with the specified goal.
+        """
+
+        # -> Get missions associated with the goal
+        missions = self.get_missions_associated_with_goal(goal_name=goal_name)
+
+        # -> Get roles associated with the missions
+        roles = []
+
+        for mission in missions:
+            roles.extend(self.get_roles_associated_with_mission(mission_name=mission["name"]))
+
+        # -> Remove duplicates
+        roles = list(set(roles))
+
+        return roles
 
     # ============================================================== Merge
+
     def merge(self, moise_model: "MoiseModel", prioritise_local: bool = True) -> bool:
         """
         Merges the current MOISEPlus model with anmoise_model one.
@@ -546,8 +830,8 @@ if __name__ == "__main__":
     # Print out the JSON representation of the model
     # print(model)
 
-    source = "Tactical Operator"
-    destination = "Bidder"
+    # source = "Tactical Operator"
+    # destination = "Bidder"
 
     # print(f"Relations between '{source}' and '{destination}':\n")
     # pprint(model.get_roles_relations_state(source=source, destination=destination), indent=2)
@@ -556,24 +840,25 @@ if __name__ == "__main__":
 
     # model.plot()
 
-    pprint(model.structural_specification.get_group_specification("DefenceTeam"), indent=2)
-
+    #pprint(model.structural_specification.get_group_specification("DefenceTeam"), indent=2)
     # pprint(model.to_dict())
     # model.save_to_file(filename="CoHoMa_moise_model_v1.json")
-
-    with open("CoHoMa_moise_model_v1.json", "r") as file:
+    with open("icare_alloc_config/icare_alloc_config/__cache/__CoHoMa_organisation_model_v1_moise+_model.json", "r") as file:
         model = json.load(file)
 
-    model = MoiseModel().from_dict(data=model)
+    print(model)
 
+    model = MoiseModel.from_dict(item_dict=model)
+
+    print(model)
 
     # ------------------------- Test role compatibilty check
     agent_skillset = ["track", "goto"]
     role = "Tracker"
 
-    can_play = model.structural_specification.check_agent_role_compatibility(
+    can_play = model.check_agent_role_compatibility(
         agent_skillset=agent_skillset,
-        role=role
+        role_name=role
     )
 
     print(f"Agent with skillset {agent_skillset} compatible with role {role} = {can_play}")

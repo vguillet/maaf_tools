@@ -312,43 +312,6 @@ class StructuralSpecification(dict, MaafItem):
 
         return not errors
 
-    def check_agent_role_compatibility(self, agent_skillset: list[str], role_name: str) -> bool:
-        """
-        Check whether an agent skillset is compatible with a given role.
-        Compatibility means the agent's skillset includes all required skills for the role and all its ancestors.
-
-        The method looks up the role in the structural specification (self.structural_specification["roles"])
-        and verifies that all skills listed in the role's "skill_requirements" (if any) are present in the
-        agent_skillset. If the role inherits from another role, the parent's skill requirements are also checked recursively.
-
-        :param agent_skillset: (list[str]): A list of skills the agent possesses
-        :param role_name: (str) The role name to check compatibility for
-
-        :return: (bool) True if the agent's skillset satisfies the role's (and its ancestors') skill requirements; otherwise False.
-        """
-
-        # Retrieve the role definition from the model.
-        role_def = next((r for r in self["roles"] if r["name"] == role_name), None)
-
-        if role_def is None:
-            raise ValueError(f"Role '{role_name}' is not defined in the model.")
-
-        # Get the role's required skills (treating None as an empty list).
-        required_skills = self.deontic_specification.get_role_skill_requirements(role_name=role_name)
-
-        # Check if all required skills for the role are in the agent's killset.
-        for skill in required_skills:
-            if skill not in agent_skillset:
-                return False
-
-        # If the role inherits from a parent role, recursively check parent's compatibility.
-        parent_role = role_def.get("inherits")
-        if parent_role:
-            if not self.check_agent_role_compatibility(agent_skillset, parent_role):
-                return False
-
-        return True
-
     def check_missing_roles_in_group(self, role_allocation: dict, group_instance: str, verbose: int = 1) -> dict:
         """
         Checks missing role assignments for a specific group instance.
@@ -707,28 +670,6 @@ class StructuralSpecification(dict, MaafItem):
                 return role
         return None
 
-    def get_roles_compatible_with_skillset(self, skillset: list[str]) -> list[str]:
-        """
-        Returns a list of concrete role names from the structural specification that are compatible
-        with a given skillset. A role is considered compatible if:
-          - It is concrete (i.e. not abstract).
-          - The skillset includes all required skills for that role and all its ancestors.
-
-        Parameters:
-          skillset (list[str]): A list of skills the agent possesses.
-
-        Returns:
-          list[str]: A list of role names that the agent can take on.
-        """
-        compatible_roles = []
-        # Iterate over all roles in the model.
-        for role in self["roles"]:
-            role_name = role["name"]
-            # Use the check_agent_role_compatibility method to determine if the agent is compatible.
-            if self.check_agent_role_compatibility(skillset, role_name):
-                compatible_roles.append(role_name)
-        return compatible_roles
-
     def get_role_relations(self, role: str) -> dict:
         """
         Returns the role relations for a given role. This method checks for all relations involving the role.
@@ -831,6 +772,28 @@ class StructuralSpecification(dict, MaafItem):
             relations_status[relation] = self.get_roles_relation_state(source, destination, relation)
 
         return relations_status
+
+    def get_roles_compatible_with_skillset(self, skillset: list[str]) -> list[str]:
+        """
+        Returns a list of concrete role names from the structural specification that are compatible
+        with a given skillset. A role is considered compatible if:
+          - It is concrete (i.e. not abstract).
+          - The skillset includes all required skills for that role and all its ancestors.
+
+        Parameters:
+          skillset (list[str]): A list of skills the agent possesses.
+
+        Returns:
+          list[str]: A list of role names that the agent can take on.
+        """
+        compatible_roles = []
+        # Iterate over all roles in the model.
+        for role in self["roles"]:
+            role_name = role["name"]
+            # Use the check_agent_role_compatibility method to determine if the agent is compatible.
+            if self.check_agent_role_compatibility(skillset, role_name):
+                compatible_roles.append(role_name)
+        return compatible_roles
 
     def get_group_specification(self, group_name: str):
         """

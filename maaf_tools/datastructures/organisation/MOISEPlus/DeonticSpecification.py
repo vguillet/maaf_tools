@@ -79,118 +79,26 @@ class DeonticSpecification(dict, MaafItem):
         warnings.warn("Checking deontic specification definition is not implemented yet.")
         return True
 
-    def check_agent_goal_compatibility(self, agent_roles: list[str], goal_name: str) -> bool:
-        """
-        Checks if the agent roles are compatible with the goal type.
-
-        :param agent_roles: List of roles associated with the agent.
-        :param goal_name: The goal type to check compatibility with.
-
-        :return: True if compatible, False otherwise.
-        """
-
-        # -> Get missions associated with the goal type
-        missions = self.functional_specification.get_missions_associated_with_goal(goal_name=goal_name, names_only=True)
-
-        # -> Get roles associated with the missions
-        missions_roles = []
-
-        for mission in missions:
-            missions_roles.extend(self.get_role_associated_with_mission(mission_name=mission))
-
-        # -> Check if the agent has at least one role_name associated with the goal type
-        for role_name in agent_roles:
-            if role_name in missions_roles:
-                return True
-
-        return False
-
     # ============================================================== Get
-    def get_role_skill_requirements(self, role_name: str) -> list[str] or None:
+
+    def get_obligations(self, role_name: str) -> list:
         """
-        Returns the skill requirements for a given role_name. The skill requirements are determined based on the
-        goal requirements associated with the missions the role_name is responsible for (permissions and obligations).
+        Returns a list of obligations for a given role_name.
 
-        :param role_name: The role_name for which to retrieve skill requirements.
-        :return : A list of skill requirements for the specified role_name.
+        :param role_name: The name of the role to get obligations for.
+        :return: A list of obligations associated with the specified role_name.
         """
+        return [obligation for obligation in self["obligations"] if obligation["role_name"] == role_name]
 
-        if self.functional_specification is None:
-            warnings.warn("Functional specification is not set.")
-            return None
-
-        # -> Get all missions associated with the role_name
-        missions = []
-        for permission in self["permissions"]:
-            if permission["role_name"] == role_name:
-                missions.append(permission["mission_name"])
-
-        for obligation in self["obligations"]:
-            if obligation["role_name"] == role_name:
-                missions.append(obligation["mission_name"])
-
-        # -> Get all goals associated with the missions
-        goals = []
-        for mission_name in missions:
-            mission_spec = self.functional_specification.get_mission(mission_name)
-            if mission_spec is not None:
-                if "goals" in mission_spec:
-                    goals.extend(mission_spec["goals"])
-
-        goals = set(goals)
-
-        # -> Get all skills associated with the goals
-        skills = []
-        for goal in goals:
-            skills.extend(self.functional_specification.get_goal_skill_requirements(goal))
-
-        skills = set(skills)
-
-        return list(skills)
-
-    def get_role_associate_with_mission(self, mission_name: str) -> list:
+    def get_permissions(self, role_name: str) -> list:
         """
-        Gets the roles associated with a specific mission type.
+        Returns a list of permissions for a given role_name.
 
-        :param mission_name: The mission type to check.
-        :return: A list of roles associated with the specified mission type.
+        :param role_name: The name of the role to get permissions for.
+        :return: A list of permissions associated with the specified role_name.
         """
+        return [permission for permission in self["permissions"] if permission["role_name"] == role_name]
 
-        roles = []
-
-        # Check permissions
-        for permission in self["permissions"]:
-            if permission["mission_name"] == mission_name:
-                roles.append(permission["role_name"])
-
-        # Check obligations
-        for obligation in self["obligations"]:
-            if obligation["mission_name"] == mission_name:
-                roles.append(obligation["role_name"])
-
-        return list(set(roles))
-
-    def get_missions_associated_with_role(self, role_name: str) -> list:
-        """
-        Gets the missions associated with a specific role_name.
-
-        :param role_name: The role_name to check.
-        :return: A list of missions associated with the specified role_name.
-        """
-
-        missions = []
-
-        # Check permissions
-        for permission in self["permissions"]:
-            if permission["role_name"] == role_name:
-                missions.append(permission["mission_name"])
-
-        # Check obligations
-        for obligation in self["obligations"]:
-            if obligation["role_name"] == role_name:
-                missions.append(obligation["mission_name"])
-
-        return list(set(missions))
 
     # ============================================================== Set
 

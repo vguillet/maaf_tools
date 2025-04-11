@@ -93,43 +93,6 @@ class FunctionalSpecification(dict, MaafItem):
         warnings.warn("Checking functional specification definition is not implemented yet.")
         return True
 
-    def check_agent_goal_compatibility(self, agent_skillset: list[str], goal_name: str) -> bool:
-        """
-        Checks if the agent's skillset is compatible with the goal's skill requirements.
-
-        :param agent_skillset: The skillset of the agent.
-        :param goal_name: The name of the goal.
-        :return: True if compatible, False otherwise.
-        """
-        # -> Get the goal's skill requirements
-        goal_skill_requirements = self.get_goal_skill_requirements(goal_name=goal_name)
-
-        # -> Check if the agent's skillset meets the goal's skill requirements
-        for skill in goal_skill_requirements:
-            if skill not in agent_skillset:
-                return False
-
-        return True
-
-    def check_agent_mission_compatibility(self, agent_skillset: list[str], mission_name: str) -> bool:
-        """
-        Checks if the agent's skillset is compatible with all of the mission's goals.
-
-        :param agent_skillset: The skillset of the agent.
-        :param mission_name: The name of the mission.
-
-        :return: True if compatible, False otherwise.
-        """
-
-        # -> Get the mission's skill requirements
-        mission_skill_requirements = self.get_mission_skill_requirements(mission_name=mission_name)
-
-        # -> Check if the agent's skillset meets the mission's skill requirements
-        for goal_skill_requirements in mission_skill_requirements:
-            for skill in goal_skill_requirements:
-                if skill not in agent_skillset:
-                    return False
-
     # ============================================================== Get
     def get_plan(self, plan_type: str):
         """
@@ -182,75 +145,8 @@ class FunctionalSpecification(dict, MaafItem):
                     return mission
         return None
 
-    def get_goal_skill_requirements(self, goal_name: str, verbose: int = 1) -> list[str] or None:
-        """
-        Returns the skill requirements for a given goal.
-
-        :param goal_name: The name of the goal.
-        :param verbose: Verbosity level (0: no output, 1: print warnings).
-        :return: A list of skill requirements for the specified goal, or None if goal is not found.
-        """
-        goal = self.get_goal(goal_name)
-        if goal is not None:
-            return goal.get("skill_requirements", [])
-        else:
-            if verbose > 0: warnings.warn(f"Goal with name '{goal_name}' not found in the functional specification.")
-            return None
-
-    def get_mission_skill_requirements(self, mission_name: str, verbose: int = 1) -> list[str] or None:
-        """
-        Returns the skill requirements for a given mission.
-
-        :param mission_name: The name of the mission.
-        :param verbose: Verbosity level (0: no output, 1: print warnings).
-        :return: A list of skill requirements for the specified mission, or None if mission is not found.
-        """
-        mission = self.get_mission(mission_name)
-        if mission is not None:
-            return [self.get_goal_skill_requirements(goal) for goal in mission.get("goals", [])]
-        else:
-            if verbose > 0: warnings.warn(f"Mission with name '{mission_name}' not found in the functional specification.")
-            return None
-
-    def get_goals_associated_with_mission(self, mission_name: str, names_only: bool = False):
-        """
-        Returns a list of goals associated with a given mission name.
-
-        :param mission_name: The name of the mission.
-        :param names_only: If True, return only the names of the goals.
-        :return: A list of goal dictionaries associated with the specified mission name.
-        """
-        goals = []
-        for scheme in self["social_schemes"]:
-            for mission in scheme["missions"]:
-                if mission["name"] == mission_name:
-                    goals.extend(mission.get("goals", []))
-
-        if names_only:
-            return goals
-        else:
-            return [self.get_goal(goal) for goal in goals]
-
-    def get_missions_associated_with_goal(self, goal_name: str, names_only: bool = False):
-        """
-        Returns a list of missions associated with a given goal name.
-
-        :param goal_name: The name of the goal.
-        :param names_only: If True, return only the names of the missions.
-        :return: A list of mission dictionaries associated with the specified goal name.
-        """
-        missions = []
-        for scheme in self["social_schemes"]:
-            for mission in scheme["missions"]:
-                if goal_name in mission.get("goals", []):
-                    missions.append(mission)
-
-        if names_only:
-            return [mission["name"] for mission in missions]
-        else:
-            return missions
-
     # ============================================================== Set
+
     # ============================================================== Merge
     def merge(self,
               functional_specification: "FunctionalSpecification",

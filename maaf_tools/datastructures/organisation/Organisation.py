@@ -626,3 +626,34 @@ if __name__ == "__main__":
 
     # print("Missing roles:", organisation_model.moise_model.check_missing_roles_in_group(role_allocation=role_allocation, group_instance="SentinelTeam_1", verbose=0))
     # print(organisation_model.role_allocation_valid)
+
+    # -> Check what tasks can be handled by D_2
+    agent_id = "D_2"
+
+    print("\n" + "=" * 50)
+    print(f"Testing Agent: {agent_id}")
+    print("=" * 50)
+
+    # Get and print agent's roles, missions, and goals
+    roles = organisation_model.get_agent_roles(agent_id)
+    print(f"\nRoles assigned to {agent_id}: {roles}")
+
+    missions = organisation_model.get_missions_handled_by_agent(agent_id)
+    print(f"\nMissions handled by {agent_id}: {missions}")
+
+    goals = organisation_model.get_goals_handled_by_agent(agent_id)
+    print(f"\nGoals handled by {agent_id}: {goals}")
+
+    # Check if agent can play each assigned role
+    print("\nRole Compatibility Check:")
+    for role in roles:
+        can_play = organisation_model.agent_can_play_role(agent_id, role)
+        print(f"  - Can {agent_id} perform role '{role}'? {'Yes' if can_play else 'No'}")
+
+    # Validate role allocation
+    is_valid = organisation_model.role_allocation_valid
+    print(f"\nRole Allocation Valid: {is_valid}")
+
+    # Plot the team structure
+    print("\nPlotting team structure...")
+    organisation_model.plot_team_structure()
