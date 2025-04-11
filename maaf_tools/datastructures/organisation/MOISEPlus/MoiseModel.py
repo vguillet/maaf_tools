@@ -539,7 +539,6 @@ class MoiseModel(MaafItem):
         else:
             return True
 
-
     # ============================================================== Get
     # ----- Skill requirements
     def get_goal_skill_requirements(self, goal_name: str, verbose: int = 1) -> list[str] or None:

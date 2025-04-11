@@ -262,7 +262,7 @@ class Organisation(MaafItem):
         agent_skillset = self.fleet[agent_id].skillset
 
         # -> Get the goal skill requirements
-        return self.moise_model.structural_specification.check_agent_goal_compatibility(
+        return self.moise_model.check_agent_goal_compatibility(
             agent_skillset=agent_skillset,
             goal_name=goal_name
             )
@@ -657,3 +657,6 @@ if __name__ == "__main__":
     # Plot the team structure
     print("\nPlotting team structure...")
     organisation_model.plot_team_structure()
+
+    # > Check if agent can take on a task "g_point_obs"
+    print(f"\nCan {agent_id} handle 'g_point_obs' task? {'Yes' if organisation_model.agent_can_handle_goal_type(agent_id, 'g_point_obs') else 'No'}")
