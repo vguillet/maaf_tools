@@ -137,7 +137,21 @@ class MoiseModel(MaafItem):
     def __has_required_skills(agent_skillset: list[str], required_skills: list[str]) -> bool:
         return set(required_skills).issubset(set(agent_skillset))
 
-    def check_agent_goal_compatibility(self, agent_skillset: list[str], goal_name: str) -> bool:
+    def check_role_goal_compatibility(self, role_name: str, goal_name: str) -> bool:
+        """
+        Check if the role is responsible for the goal
+        :param role_name: The name of the role.
+        :param goal_name: The name of the goal.
+        :return: True if the role is responsible for the goal, False otherwise.
+        """
+
+        # -> Get the goals associated with the role
+        role_goals = self.get_goals_associated_with_role(role_name=role_name)
+
+        # -> Check if the goal is in the role's goals
+        return goal_name in role_goals
+
+    def check_agent_skillset_goal_compatibility(self, agent_skillset: list[str], goal_name: str) -> bool:
         """
         Checks if the agent's skillset is compatible with the goal's skill requirements.
 

@@ -45,7 +45,11 @@ class AgentState(State):
     w: float = None                     # The z-component of the velocity of the target agent
 
     def __repr__(self) -> str:
-        return f"State of agent {self.agent_id} at {self.timestamp}"
+        return (f"State of agent {self.agent_id} at {self.timestamp}"
+                f"\n    > Online: {self.online}"
+                f"\n    > Battery level: {self.battery_level}%"
+                f"\n    > Position: ({self.x}, {self.y}, {self.z})"
+                )
 
     @property
     def pos(self) -> list:
