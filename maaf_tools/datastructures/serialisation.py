@@ -214,48 +214,80 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
     :return: An item object
     """
 
-    def recursive_create_item(field, field_type: dict, partial: bool) -> object:
-        """
-        Recursive function to create the item object.
+    # def recursive_create_item(field, field_type: dict, partial: bool) -> object:
+    #     """
+    #     Recursive function to create the item object.
+    #
+    #     :param field: The dictionary representation of the item.
+    #     :param field_type: The types of the fields in the dictionary.
+    #
+    #     :return: The item object.
+    #     """
+    #
+    #     # pprint(f"--------------------------------------- DOING {field_type}: {field}")
+    #
+    #     if type(field_type) == str:
+    #         field_type_string = field_type
+    #     else:
+    #         field_type_string = types_class_str_dict[type(field_type)]
+    #
+    #     field_cls = types_str_class_dict[field_type_string]
+    #
+    #     if hasattr(field_cls, "from_dict") and field_cls:
+    #         try:
+    #             return field_cls.from_dict(item_dict=field, partial=partial)
+    #         except:
+    #             return field_cls.from_dict(field)
+    #
+    #     # ----- Mutables
+    #     elif isinstance(field, list):
+    #         return [recursive_create_item(subitem, field_type[i], partial) for i, subitem in enumerate(field)]
+    #
+    #     elif isinstance(field, dict):
+    #         return {key: recursive_create_item(subitem, field_type[key], partial) for key, subitem in field.items()}
+    #
+    #     # ----- Class specific
+    #     elif field_type_string == "pd.DataFrame":
+    #         return pd.DataFrame.from_dict(field, orient="index")
+    #
+    #     elif field_type_string == "None":
+    #         return None
+    #
+    #     # ----- Base
+    #     else:
+    #         return field_cls(field)
 
-        :param field: The dictionary representation of the item.
-        :param field_type: The types of the fields in the dictionary.
-
-        :return: The item object.
-        """
-
-        # pprint(f"--------------------------------------- DOING {field_type}: {field}")
-
-        if type(field_type) == str:
+    def recursive_create_item(field, field_type, partial: bool) -> object:
+        # Determine the type string first.
+        if isinstance(field_type, str):
             field_type_string = field_type
         else:
             field_type_string = types_class_str_dict[type(field_type)]
+        field_cls = types_str_class_dict[field_type_string]
 
-        cls = types_str_class_dict[field_type_string]
-
-        if hasattr(cls, "from_dict") and cls:
-            try:
-                return cls.from_dict(item_dict=field, partial=partial)
-            except:
-                return cls.from_dict(field)
-
-        # ----- Mutables
-        elif isinstance(field, list):
-            return [recursive_create_item(subitem, field_type[i], partial) for i, subitem in enumerate(field)]
-
-        elif isinstance(field, dict):
-            return {key: recursive_create_item(subitem, field_type[key], partial) for key, subitem in field.items()}
-
-        # ----- Class specific
-        elif field_type_string == "pd.DataFrame":
+        # Specific branch for pandas DataFrame:
+        if field_type_string == "pd.DataFrame":
             return pd.DataFrame.from_dict(field, orient="index")
 
+        # Specific branch for a None type:
         elif field_type_string == "None":
             return None
 
-        # ----- Base
+        # Then the generic from_dict dispatch:
+        if hasattr(field_cls, "from_dict") and field_cls:
+            try:
+                return field_cls.from_dict(item_dict=field, partial=partial)
+            except Exception:
+                # Consider logging the exception details here for debugging.
+                return field_cls.from_dict(field)
+
+        # Mutables and built-in types:
+        if isinstance(field, list):
+            return [recursive_create_item(subitem, field_type[i], partial) for i, subitem in enumerate(field)]
+        elif isinstance(field, dict):
+            return {key: recursive_create_item(subitem, field_type[key], partial) for key, subitem in field.items()}
         else:
-            return cls(field)
+            return field_cls(field)
 
     # -> Get the fields of the item class
     item_fields = fields(cls)
@@ -273,7 +305,7 @@ def from_dict(cls, item_dict: dict, fields_exclusion_lst: list = [], partial: bo
     try:
         fields_types = item_dict.pop("field_types")
     except KeyError:
-        pass
+        raise ValueError("The input dictionary is missing the 'field_types' key.")
 
     if not partial:
         # -> Check if all required fields are present in the dictionary

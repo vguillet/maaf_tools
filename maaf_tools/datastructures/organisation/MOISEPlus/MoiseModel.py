@@ -65,7 +65,13 @@ class MoiseModel(MaafItem):
         self.functional_specification = FunctionalSpecification(functional_specification)
         self.deontic_specification = DeonticSpecification(deontic_specification)
 
-        # -> Setup cross-references
+        # -> Setup cross-references between specifications
+        self.__set_cross_references()
+
+    def __set_cross_references(self):
+        """
+        Sets the cross-references between the different specifications.
+        """
         # Structural Specification
         self.structural_specification.functional_specification = self.functional_specification
         self.structural_specification.deontic_specification = self.deontic_specification
@@ -127,6 +133,10 @@ class MoiseModel(MaafItem):
         # Combine errors from all specifications.
         return structural_spec_valid and functional_spec_valid and deontic_spec_valid
 
+    @staticmethod
+    def __has_required_skills(agent_skillset: list[str], required_skills: list[str]) -> bool:
+        return set(required_skills).issubset(set(agent_skillset))
+
     def check_agent_goal_compatibility(self, agent_skillset: list[str], goal_name: str) -> bool:
         """
         Checks if the agent's skillset is compatible with the goal's skill requirements.
@@ -139,11 +149,7 @@ class MoiseModel(MaafItem):
         goal_skill_requirements = self.get_goal_skill_requirements(goal_name=goal_name)
 
         # -> Check if the agent's skillset meets the goal's skill requirements
-        for skill in goal_skill_requirements:
-            if skill not in agent_skillset:
-                return False
-
-        return True
+        return self.__has_required_skills(agent_skillset=agent_skillset, required_skills=goal_skill_requirements)
 
     def check_agent_mission_compatibility(self, agent_skillset: list[str], mission_name: str) -> bool:
         """
@@ -160,10 +166,8 @@ class MoiseModel(MaafItem):
 
         # -> Check if the agent's skillset meets the mission's skill requirements
         for goal_skill_requirements in mission_skill_requirements:
-            for skill in goal_skill_requirements:
-                if skill not in agent_skillset:
-                    return False
-
+            if not self.__has_required_skills(agent_skillset=agent_skillset, required_skills=goal_skill_requirements):
+                return False
         return True
 
     def check_agent_role_compatibility(self, agent_skillset: list[str], role_name: str) -> bool:
@@ -191,9 +195,8 @@ class MoiseModel(MaafItem):
         required_skills = self.get_role_skill_requirements(role_name=role_name)
 
         # Check if all required skills for the role are in the agent's killset.
-        for skill in required_skills:
-            if skill not in agent_skillset:
-                return False
+        if not self.__has_required_skills(agent_skillset=agent_skillset, required_skills=required_skills):
+            return False
 
         # If the role inherits from a parent role, recursively check parent's compatibility.
         parent_role = role_def.get("inherits")
@@ -248,25 +251,8 @@ class MoiseModel(MaafItem):
             warnings.warn("Functional specification is not set.")
             return None
 
-        # -> Get all missions associated with the role_name
-        missions = []
-        for permission in self.deontic_specification["permissions"]:
-            if permission["role_name"] == role_name:
-                missions.append(permission["mission_name"])
-
-        for obligation in self.deontic_specification["obligations"]:
-            if obligation["role_name"] == role_name:
-                missions.append(obligation["mission_name"])
-
-        # -> Get all goals associated with the missions
-        goals = []
-        for mission_name in missions:
-            mission_spec = self.functional_specification.get_mission(mission_name)
-            if mission_spec is not None:
-                if "goals" in mission_spec:
-                    goals.extend(mission_spec["goals"])
-
-        goals = set(goals)
+        # -> Get goals associated with the role
+        goals = self.get_goals_associated_with_role(role_name=role_name)
 
         # -> Get all skills associated with the goals
         skills = []
@@ -277,13 +263,86 @@ class MoiseModel(MaafItem):
 
         return list(skills)
 
-    # ----- Mappings parsing
+    def get_roles_compatible_with_skillset(self, skillset: list[str]) -> list[str]:
+        """
+        Returns a list of concrete role names from the structural specification that are compatible
+        with a given skillset. A role is considered compatible if:
+          - It is concrete (i.e. not abstract).
+          - The skillset includes all required skills for that role and all its ancestors.
+
+        :param skillset: A list of skills the agent possesses.
+        :return: A list of compatible role names.
+        """
+
+        compatible_roles = []
+        # Iterate over all roles in the model.
+        for role in self.structural_specification["roles"]:
+            role_name = role["name"]
+            # Use the check_agent_role_compatibility method to determine if the agent is compatible.
+            if self.check_agent_role_compatibility(skillset, role_name):
+                compatible_roles.append(role_name)
+        return compatible_roles
+
+    # ----- Mappings query
+    @staticmethod
+    def __post_process_mappings_query(result: list[dict] or list, names_only: bool = True):
+        seen = set()
+        deduplicated_items = []
+        for item in result:
+            if isinstance(item, dict):
+                name = item.get('name')
+            else:
+                name = item
+            if name not in seen:
+                seen.add(name)
+                deduplicated_items.append(item)
+        if names_only:
+            processed_result = []
+            for item in deduplicated_items:
+                if isinstance(item, dict):
+                    processed_result.append(item['name'])
+                else:
+                    processed_result.append(item)
+            return processed_result
+        else:
+            return deduplicated_items
+    # @staticmethod
+    # def __post_process_mappings_query(result: list[dict] or list, names_only: bool = True):
+    #     """
+    #     Post-processes the result of a mappings query.
+    #     - Removes duplicates (duplicate strings or dictionaries with the same name).
+    #     - If names_only is True, returns only the names of the items in the result.
+    #
+    #     :param result: The result of the mappings query.
+    #     :param names_only: If True, return only the names of the items in the result.
+    #     :return: The processed result.
+    #     """
+    #
+    #     print(result)
+    #
+    #     # -> If list of str, remove duplicates
+    #     if isinstance(result, list) and all(isinstance(item, str) for item in result):
+    #         result = list(set(result))
+    #
+    #     # -> Remove duplicates that share the same name
+    #     if isinstance(result, dict):
+    #         result = [result]
+    #     seen = set()
+    #     result = [item for item in result if item["name"] not in seen and not seen.add(item["name"])]
+    #
+    #     # -> Check if names_only is True
+    #     if names_only:
+    #         return [item["name"] for item in result]
+    #
+    #     return result
+
     # Goals to [...]
-    def get_goals_associated_with_role(self, role_name: str) -> list:
+    def get_goals_associated_with_role(self, role_name: str, names_only: bool = True) -> list:
         """
         Gets the goals associated with a specific role_name.
 
         :param role_name: The role_name to check.
+        :param names_only: If True, return only the names of the goals.
         :return: A list of goals associated with the specified role_name.
         """
 
@@ -295,14 +354,14 @@ class MoiseModel(MaafItem):
         for mission_name in missions:
             goals.extend(self.get_goals_associated_with_mission(mission_name=mission_name))
 
-        # -> Remove duplicates
-        goals = list(set(goals))
+        return self.__post_process_mappings_query(
+            result = goals,
+            names_only = names_only
+        )
 
-        return goals
+    # ============================================================== Set
 
-        # ============================================================== Set
-
-    def get_goals_associated_with_mission(self, mission_name: str, names_only: bool = False):
+    def get_goals_associated_with_mission(self, mission_name: str, names_only: bool = True):
         """
         Returns a list of goals associated with a given mission name.
 
@@ -316,38 +375,31 @@ class MoiseModel(MaafItem):
                 if mission["name"] == mission_name:
                     goals.extend(mission.get("goals", []))
 
-        if names_only:
-            return goals
-        else:
-            return [self.functional_specification.get_goal(goal) for goal in goals]
+        return self.__post_process_mappings_query(
+            result = [self.functional_specification.get_goal(goal) for goal in goals],
+            names_only = names_only
+        )
 
     # Missions to [...]
-    def get_missions_associated_with_role(self, role_name: str) -> list:
+    def get_missions_associated_with_role(self, role_name: str, names_only: bool = True) -> list:
         """
         Gets the missions associated with a specific role_name.
 
         :param role_name: The role_name to check.
+        :param names_only: If True, return only the names of the missions.
         :return: A list of missions associated with the specified role_name.
         """
 
         missions = []
+        missions.extend(self.deontic_specification.get_missions_permitted_to_role(role_name=role_name))
+        missions.extend(self.deontic_specification.get_missions_obligated_to_role(role_name=role_name))
 
-        # Check permissions
-        for permission in self.deontic_specification["permissions"]:
-            if permission["role_name"] == role_name:
-                missions.append(permission["mission_name"])
+        return self.__post_process_mappings_query(
+            result = missions,
+            names_only = names_only
+        )
 
-        # Check obligations
-        for obligation in self.deontic_specification["obligations"]:
-            if obligation["role_name"] == role_name:
-                missions.append(obligation["mission_name"])
-
-        # -> Remove duplicates
-        missions = list(set(missions))
-
-        return missions
-
-    def get_missions_associated_with_goal(self, goal_name: str, names_only: bool = False):
+    def get_missions_associated_with_goal(self, goal_name: str, names_only: bool = True):
         """
         Returns a list of missions associated with a given goal name.
 
@@ -361,17 +413,18 @@ class MoiseModel(MaafItem):
                 if goal_name in mission.get("goals", []):
                     missions.append(mission)
 
-        if names_only:
-            return [mission["name"] for mission in missions]
-        else:
-            return missions
+        return self.__post_process_mappings_query(
+            result = missions,
+            names_only = names_only
+        )
 
     # Roles to [...]
-    def get_roles_associated_with_mission(self, mission_name: str) -> list:
+    def get_roles_associated_with_mission(self, mission_name: str, names_only: bool = True) -> list:
         """
         Gets the roles associated with a specific mission type.
 
         :param mission_name: The mission type to check.
+        :param names_only: If True, return only the names of the roles.
         :return: A list of roles associated with the specified mission type.
         """
 
@@ -387,13 +440,17 @@ class MoiseModel(MaafItem):
             if obligation["mission_name"] == mission_name:
                 roles.append(obligation["role_name"])
 
-        return list(set(roles))
+        return self.__post_process_mappings_query(
+            result = roles,
+            names_only = names_only
+        )
 
-    def get_roles_associated_with_goal(self, goal_name: str) -> list:
+    def get_roles_associated_with_goal(self, goal_name: str, names_only: bool = True) -> list:
         """
         Gets the roles associated with a specific goal.
 
         :param goal_name: The goal name to check.
+        :param names_only: If True, return only the names of the roles.
         :return: A list of roles associated with the specified goal.
         """
 
@@ -406,10 +463,10 @@ class MoiseModel(MaafItem):
         for mission in missions:
             roles.extend(self.get_roles_associated_with_mission(mission_name=mission["name"]))
 
-        # -> Remove duplicates
-        roles = list(set(roles))
-
-        return roles
+        return self.__post_process_mappings_query(
+            result = roles,
+            names_only = names_only
+        )
 
     # ============================================================== Merge
 
@@ -467,6 +524,23 @@ class MoiseModel(MaafItem):
             "functional_specification": self.functional_specification,
             "deontic_specification": self.deontic_specification
         }
+
+    @classmethod
+    def from_dict(cls, item_dict: dict) -> None:
+        """
+        Converts a dictionary to a MOISEPlus model.
+
+        :param item_dict: The dictionary representation of the MOISEPlus model.
+        """
+
+        # -> Create a new instance of the class
+        instance = cls(
+            structural_specification=item_dict.get("structural_specification"),
+            functional_specification=item_dict.get("functional_specification"),
+            deontic_specification=item_dict.get("deontic_specification")
+            )
+
+        return instance
 
     def plot(self):
         """
@@ -647,6 +721,7 @@ class MoiseModel(MaafItem):
 
 
 if __name__ == "__main__":
+    """
     # Create a new MOISEPlus model
     model = MoiseModel()
 
@@ -843,26 +918,20 @@ if __name__ == "__main__":
     #pprint(model.structural_specification.get_group_specification("DefenceTeam"), indent=2)
     # pprint(model.to_dict())
     # model.save_to_file(filename="CoHoMa_moise_model_v1.json")
+    """
+
     with open("icare_alloc_config/icare_alloc_config/__cache/__CoHoMa_organisation_model_v1_moise+_model.json", "r") as file:
         model = json.load(file)
 
-    print(model)
 
     model = MoiseModel.from_dict(item_dict=model)
 
     print(model)
 
-    # ------------------------- Test role compatibilty check
-    agent_skillset = ["track", "goto"]
-    role = "Tracker"
+    print(model.check_agent_role_compatibility(["goto"], "Scout"))
 
-    can_play = model.check_agent_role_compatibility(
-        agent_skillset=agent_skillset,
-        role_name=role
-    )
 
-    print(f"Agent with skillset {agent_skillset} compatible with role {role} = {can_play}")
 
-    # print(model.structural_specification.get_roles_compatible_with_agent(agent_skillset=agent_skillset))
+    # =============================== Unit tests ===============================
 
-    model.plot()
+

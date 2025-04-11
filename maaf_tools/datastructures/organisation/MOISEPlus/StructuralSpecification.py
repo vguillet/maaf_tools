@@ -773,28 +773,6 @@ class StructuralSpecification(dict, MaafItem):
 
         return relations_status
 
-    def get_roles_compatible_with_skillset(self, skillset: list[str]) -> list[str]:
-        """
-        Returns a list of concrete role names from the structural specification that are compatible
-        with a given skillset. A role is considered compatible if:
-          - It is concrete (i.e. not abstract).
-          - The skillset includes all required skills for that role and all its ancestors.
-
-        Parameters:
-          skillset (list[str]): A list of skills the agent possesses.
-
-        Returns:
-          list[str]: A list of role names that the agent can take on.
-        """
-        compatible_roles = []
-        # Iterate over all roles in the model.
-        for role in self["roles"]:
-            role_name = role["name"]
-            # Use the check_agent_role_compatibility method to determine if the agent is compatible.
-            if self.check_agent_role_compatibility(skillset, role_name):
-                compatible_roles.append(role_name)
-        return compatible_roles
-
     def get_group_specification(self, group_name: str):
         """
         Returns the specification of a group by name.

@@ -81,7 +81,7 @@ class DeonticSpecification(dict, MaafItem):
 
     # ============================================================== Get
 
-    def get_obligations(self, role_name: str) -> list:
+    def get_obligations_associated_with_role(self, role_name: str) -> list:
         """
         Returns a list of obligations for a given role_name.
 
@@ -90,7 +90,7 @@ class DeonticSpecification(dict, MaafItem):
         """
         return [obligation for obligation in self["obligations"] if obligation["role_name"] == role_name]
 
-    def get_permissions(self, role_name: str) -> list:
+    def get_permissions_associated_with_role(self, role_name: str) -> list:
         """
         Returns a list of permissions for a given role_name.
 
@@ -99,6 +99,41 @@ class DeonticSpecification(dict, MaafItem):
         """
         return [permission for permission in self["permissions"] if permission["role_name"] == role_name]
 
+    def get_roles_obligated_to_mission(self, mission_name: str) -> list:
+        """
+        Returns a list of roles obligated to a given mission_name.
+
+        :param mission_name: The name of the mission to get roles for.
+        :return: A list of roles obligated to the specified mission_name.
+        """
+        return [obligation["role_name"] for obligation in self["obligations"] if obligation["mission_name"] == mission_name]
+
+    def get_roles_permitted_to_mission(self, mission_name: str) -> list:
+        """
+        Returns a list of roles permitted to a given mission_name.
+
+        :param mission_name: The name of the mission to get roles for.
+        :return: A list of roles permitted to the specified mission_name.
+        """
+        return [permission["role_name"] for permission in self["permissions"] if permission["mission_name"] == mission_name]
+
+    def get_missions_obligated_to_role(self, role_name: str) -> list:
+        """
+        Returns a list of missions obligated to a given role_name.
+
+        :param role_name: The name of the role to get missions for.
+        :return: A list of missions obligated to the specified role_name.
+        """
+        return [obligation["mission_name"] for obligation in self["obligations"] if obligation["role_name"] == role_name]
+
+    def get_missions_permitted_to_role(self, role_name: str) -> list:
+        """
+        Returns a list of missions permitted to a given role_name.
+
+        :param role_name: The name of the role to get missions for.
+        :return: A list of missions permitted to the specified role_name.
+        """
+        return [permission["mission_name"] for permission in self["permissions"] if permission["role_name"] == role_name]
 
     # ============================================================== Set
 
