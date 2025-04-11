@@ -219,7 +219,7 @@ class Organisation(MaafItem):
         # -> Checking the role allocation against the structural specification
         #     - Check if the role allocation is valid with respect to the structural specification
         #     - Check if the role allocation is valid with respect to the agents' skillsets and role skill requirements
-        valid_wrt_structural_model = self.moise_model.structural_specification.check_role_allocation(
+        valid_wrt_structural_model = self.moise_model.check_role_allocation(
             role_allocation=self.role_allocation,
             fleet=self.fleet,
             stop_at_first_error=stop_at_first_error,
@@ -242,7 +242,7 @@ class Organisation(MaafItem):
         agent_skillset = self.fleet[agent_id].skillset
 
         # -> Get the role skill requirements
-        return self.moise_model.structural_specification.check_agent_role_compatibility(
+        return self.moise_model.check_agent_role_compatibility(
             agent_skillset=agent_skillset,
             role_name=role_name
             )
@@ -314,7 +314,7 @@ class Organisation(MaafItem):
         # -> Get the missions associated with the roles
         missions = []
         for role in roles:
-            role_missions = self.moise_model.deontic_specification.get_missions_associated_with_role(role_name=role)
+            role_missions = self.moise_model.get_missions_associated_with_role(role_name=role)
             missions.extend(role_missions)
 
         # -> Remove duplicates
@@ -337,7 +337,7 @@ class Organisation(MaafItem):
         # -> Get the goals associated with the roles
         goals = []
         for role in roles:
-            role_goals = self.moise_model.functional_specification.get_goals_associated_with_role(role_name=role)
+            role_goals = self.moise_model.get_goals_associated_with_role(role_name=role)
             goals.extend(role_goals)
 
         # -> Remove duplicates

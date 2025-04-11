@@ -206,6 +206,340 @@ class MoiseModel(MaafItem):
 
         return True
 
+    def check_missing_roles_in_group(self, role_allocation: dict, group_instance: str, verbose: int = 1) -> dict:
+        """
+        Checks missing role assignments for a specific group instance.
+
+        This method aggregates the role counts from the specified group instance and all its descendant
+        instances (as defined by the "parent" field in role_allocation["group_instances"]) and compares the
+        totals with the minimal requirements (role_cardinality) defined in the model for that group type.
+
+        Parameters:
+          role_allocation (dict): The team allocation specification, which should include "group_instances" and "team".
+          group_instance (str): The specific group instance identifier to check.
+          verbose (int): Verbosity level (>=1 prints messages).
+
+        Returns:
+          dict: A dictionary mapping role names to the number of additional assignments needed to meet the minimal
+                requirements. An empty dictionary indicates that the instance meets (or exceeds) its requirements.
+        """
+        # Ensure group_instances is provided.
+        if "group_instances" not in role_allocation:
+            if verbose >= 1:
+                warnings.warn("No group_instances defined in the allocation.")
+            return {}
+
+        group_instances = role_allocation["group_instances"]
+
+        # Build instance mapping and parent-to-children relationships.
+        instance_map = {}
+        parent_to_children = {}
+        for gi in group_instances:
+            inst = gi["instance"]
+            gtype = gi["group_type"]
+            parent = gi.get("parent")
+            instance_map[inst] = {"group_type": gtype, "parent": parent}
+            if parent:
+                parent_to_children.setdefault(parent, []).append(inst)
+
+        # Check if the specified group_instance is defined.
+        if group_instance not in instance_map:
+            if verbose >= 1:
+                warnings.warn(f"Group instance '{group_instance}' is not defined in group_instances.")
+            return {}
+
+        # Retrieve the group type for the specified instance.
+        group_type = instance_map[group_instance]["group_type"]
+
+        # Build direct role counts from team assignments.
+        direct_counts = {}  # instance_id -> { role: count }
+        for agent in role_allocation.get("team", []):
+            for assignment in agent.get("assignments", []):
+                inst = assignment.get("instance")
+                roles = assignment.get("roles", [])
+                if inst in instance_map:
+                    direct_counts.setdefault(inst, {})
+                    for role in roles:
+                        direct_counts[inst][role] = direct_counts[inst].get(role, 0) + 1
+
+        # Helper: recursively aggregate role counts from an instance and all its descendants.
+        def get_aggregated_counts(inst_id: str) -> dict:
+            counts = dict(direct_counts.get(inst_id, {}))
+            for child in parent_to_children.get(inst_id, []):
+                child_counts = get_aggregated_counts(child)
+                for r, cnt in child_counts.items():
+                    counts[r] = counts.get(r, 0) + cnt
+
+            return counts
+
+        aggregated = get_aggregated_counts(group_instance)
+
+        # Retrieve the model definition for this group type.
+        group_model = next((g for g in self.structural_specification["groups"] if g["name"] == group_type), None)
+        if group_model is None:
+            if verbose >= 1:
+                warnings.warn(f"Group type '{group_type}' is not defined in the model.")
+            return {}
+
+        role_cardinality = group_model.get("role_cardinality", {})
+
+        # Determine missing roles by comparing aggregated counts with minimal requirements.
+        missing = {}
+        for role, card in role_cardinality.items():
+            min_required = card.get("min", 0)
+            current = aggregated.get(role, 0)
+            if current < min_required:
+                missing[role] = min_required - current
+
+        if verbose >= 1:
+            print(f"In group instance '{group_instance}' (type '{group_type}'): missing roles: {missing}")
+
+        return missing
+
+    def check_role_allocation(self, role_allocation: dict, fleet, stop_at_first_error: bool = False, verbose: int = 1) -> bool:
+        # -> Check role allocation against agent skillsets
+        valid_wrt_agents_skillsets = self.check_role_allocation_against_skillsets(
+            role_allocation=role_allocation,
+            fleet=fleet,
+            stop_at_first_error=stop_at_first_error,
+            verbose=verbose
+        )
+
+        # -> Check role allocation against model
+        valid_wrt_structural_model = self.check_role_allocation_against_model(
+            role_allocation=role_allocation,
+            stop_at_first_error=stop_at_first_error,
+            verbose=verbose
+        )
+
+        return valid_wrt_agents_skillsets and valid_wrt_structural_model
+
+    def check_role_allocation_against_skillsets(self, role_allocation: dict, fleet, stop_at_first_error: bool = False, verbose: int = 1) -> bool:
+        """
+        Verify that a given role allocation respects the agents' skillsets.
+
+        Checks include:
+          - Every agent referenced in team assignments is defined in the fleet.
+          - Every role in the assignments is compatible with the agent's skillset.
+
+        :param role_allocation: The team allocation specification including "group_instances" and "team".
+        :param fleet: The fleet specification.
+        :param verbose: Verbosity level (>=1 prints messages).
+        :param stop_at_first_error: If True, return immediately on the first error found.
+        :return: True if the allocation satisfies all constraints, False otherwise.
+        """
+        errors = []
+
+        # ... for every agent in the fleet
+        for agent in fleet:
+            # Get the agent's assigned roles
+            assigned_roles = []
+
+            for agent_assignment in role_allocation["team"]:
+                if agent_assignment["id"] == agent.id:
+                    for assignment in agent_assignment["assignments"]:
+                        assigned_roles += assignment["roles"]
+
+            assigned_roles = set(assigned_roles)
+
+            # -> Check every assigned role skill requirements against the agent's skillset
+            for role in assigned_roles:
+                if not self.check_agent_role_compatibility(agent.skillset, role):
+                    err = f"Agent '{agent.id}' is not compatible with role '{role}'."
+                    errors.append(err)
+                    if stop_at_first_error:
+                        return False
+
+        # --- Final reporting ---
+        if errors:
+            if verbose >= 1:
+                print("Errors found in role allocation:")
+                for err in errors:
+                    print("  -", err)
+            return False
+        else:
+            return True
+
+    def check_role_allocation_against_model(self, role_allocation: dict, stop_at_first_error: bool = False, verbose: int = 1) -> bool:
+        """
+        Verify that a given role allocation respects the structural specification.
+        This version accumulates all error messages (if stop_at_first_error is False) or stops at the first error found
+        (if stop_at_first_error is True), printing all errors if verbose is enabled.
+
+        Checks include:
+          - Every group instance referenced in team assignments is defined in role_allocation["group_instances"].
+          - If a "team" field is provided in an assignment, it must match the group_type of the referenced instance.
+          - All roles in the assignments must be defined in the model.
+          - Group composition constraints:
+                • For each instance (of a group type with role_cardinality), the aggregated role counts
+                  (from that instance and its descendant instances) must meet the minimal requirements defined
+                  in self["groups"].
+                • For each parent group instance that allows subgroups (via a "subgroups" mapping), the number
+                  of direct child instances for each allowed subgroup type must be within the specified cardinality.
+          - Role relation constraints:
+                • For each role relation defined in the model, if both roles appear in the assignments, there must be
+                  at least one pair of assignments that satisfy the relation's scope:
+                      - "intra": Assignments are in the same instance or in instances sharing the same parent.
+                      - "inter": Assignments are in different instances and not siblings.
+                      - "omni": No grouping constraint.
+
+        :param role_allocation: The team allocation specification including "group_instances" and "team".
+        :param verbose: Verbosity level (>=1 prints messages).
+        :param stop_at_first_error: If True, return immediately on the first error found.
+        :return: True if the allocation satisfies all constraints, False otherwise.
+        """
+        errors = []
+
+        # --- Step 0: Process group_instances ---
+        if "group_instances" not in role_allocation:
+            err = "No group_instances defined in the allocation."
+            errors.append(err)
+            if stop_at_first_error:
+                return False
+
+        group_instances = role_allocation.get("group_instances", [])
+        instance_map = {}  # instance_id -> {"group_type": ..., "parent": ...}
+        parent_to_children = {}  # parent instance_id -> list of child instance_ids
+        for gi in group_instances:
+            inst = gi["instance"]
+            group_type = gi["group_type"]
+            parent = gi.get("parent")  # May be None for top-level groups.
+            instance_map[inst] = {"group_type": group_type, "parent": parent}
+            if parent:
+                parent_to_children.setdefault(parent, []).append(inst)
+
+        # --- Step 1: Process team assignments ---
+        roles_defined = {role["name"] for role in self.structural_specification.roles}
+        assignments_list = []  # list of tuples: (agent_id, instance, role)
+
+        for agent in role_allocation.get("team", []):
+            agent_id = agent.get("id", "unknown")
+            for assignment in agent.get("assignments", []):
+                inst = assignment.get("instance")
+                if inst not in instance_map:
+                    err = f"Instance '{inst}' (agent {agent_id}) is not defined in group_instances."
+                    errors.append(err)
+                    # if verbose >= 1:
+                    #     print(err)
+                    if stop_at_first_error:
+                        return False
+                    continue  # Skip processing this assignment
+
+                expected_group = instance_map[inst]["group_type"]
+                if "team" in assignment and assignment["team"] != expected_group:
+                    err = (f"Assignment for agent {agent_id} specifies team '{assignment['team']}' "
+                           f"but instance '{inst}' is of type '{expected_group}'.")
+                    errors.append(err)
+                    if stop_at_first_error:
+                        return False
+
+                roles = assignment.get("roles", [])
+                for role in roles:
+                    if role not in roles_defined:
+                        err = f"Role '{role}' is not defined in the model (agent {agent_id}, instance {inst})."
+                        errors.append(err)
+                        if stop_at_first_error:
+                            return False
+                    else:
+                        assignments_list.append((agent_id, inst, role))
+
+        # --- Step 2: Validate group composition constraints via check_missing_roles_in_group ---
+        for group in self.structural_specification["groups"]:
+            if "role_cardinality" in group and group["role_cardinality"]:
+                group_type = group["name"]
+                # For each instance that has this group_type:
+                for inst, info in instance_map.items():
+                    if info["group_type"] == group_type:
+                        missing = self.check_missing_roles_in_group(role_allocation, inst, verbose=0)
+                        if missing:
+                            err = f"Instance '{inst}' of group type '{group_type}' is missing roles: {missing}"
+                            errors.append(err)
+                            if stop_at_first_error:
+                                return False
+
+        # --- Step 3: Validate subgroup cardinalities ---
+        for group in self.structural_specification["groups"]:
+            if "subgroups" in group and group["subgroups"]:
+                group_type = group["name"]
+                for inst, info in instance_map.items():
+                    if info["group_type"] == group_type:
+                        children = parent_to_children.get(inst, [])
+                        subgroup_counts = {}
+                        for child_inst in children:
+                            child_type = instance_map[child_inst]["group_type"]
+                            subgroup_counts[child_type] = subgroup_counts.get(child_type, 0) + 1
+                        for subgroup_type, cardinality in group["subgroups"].items():
+                            count = subgroup_counts.get(subgroup_type, 0)
+                            min_required = cardinality.get("min", 0)
+                            max_allowed = cardinality.get("max", None)
+                            if count < min_required:
+                                err = (f"In parent instance '{inst}' of group type '{group_type}', "
+                                       f"subgroup '{subgroup_type}' count {count} is below the minimum required {min_required}.")
+                                errors.append(err)
+                                if stop_at_first_error:
+                                    return False
+                            if max_allowed is not None and count > max_allowed:
+                                err = (f"In parent instance '{inst}' of group type '{group_type}', "
+                                       f"subgroup '{subgroup_type}' count {count} exceeds the maximum allowed {max_allowed}.")
+                                errors.append(err)
+                                if stop_at_first_error:
+                                    return False
+
+        # --- Step 4: Validate role relation constraints ---
+        for relation in self.structural_specification["role_relations"]:
+            src_role = relation["source"]
+            dst_role = relation["destination"]
+            scope = relation["scope"]
+
+            src_assignments = [(agent_id, inst) for agent_id, inst, role in assignments_list if role == src_role]
+            dst_assignments = [(agent_id, inst) for agent_id, inst, role in assignments_list if role == dst_role]
+
+            # If one of the roles isn't assigned anywhere, skip this relation.
+            if not src_assignments or not dst_assignments:
+                continue
+
+            relation_satisfied = False
+            for src_agent, src_inst in src_assignments:
+                for dst_agent, dst_inst in dst_assignments:
+                    if scope == "intra":
+                        if src_inst == dst_inst:
+                            relation_satisfied = True
+                            break
+                        parent_src = instance_map[src_inst].get("parent")
+                        parent_dst = instance_map[dst_inst].get("parent")
+                        if parent_src and parent_src == parent_dst:
+                            relation_satisfied = True
+                            break
+                    elif scope == "inter":
+                        if src_inst != dst_inst:
+                            parent_src = instance_map[src_inst].get("parent")
+                            parent_dst = instance_map[dst_inst].get("parent")
+                            if not parent_src or not parent_dst or parent_src != parent_dst:
+                                relation_satisfied = True
+                                break
+                    elif scope == "omni":
+                        relation_satisfied = True
+                        break
+                if relation_satisfied:
+                    break
+
+            if not relation_satisfied:
+                err = f"Role relation constraint not satisfied: {src_role} -> {dst_role} with scope '{scope}'."
+                errors.append(err)
+                if stop_at_first_error:
+                    return False
+
+        # --- Final reporting ---
+        if errors:
+            if verbose >= 1:
+                print("Errors found in role allocation:")
+                for err in errors:
+                    print("  -", err)
+            return False
+        else:
+            return True
+
+
     # ============================================================== Get
     # ----- Skill requirements
     def get_goal_skill_requirements(self, goal_name: str, verbose: int = 1) -> list[str] or None:
@@ -306,35 +640,6 @@ class MoiseModel(MaafItem):
             return processed_result
         else:
             return deduplicated_items
-    # @staticmethod
-    # def __post_process_mappings_query(result: list[dict] or list, names_only: bool = True):
-    #     """
-    #     Post-processes the result of a mappings query.
-    #     - Removes duplicates (duplicate strings or dictionaries with the same name).
-    #     - If names_only is True, returns only the names of the items in the result.
-    #
-    #     :param result: The result of the mappings query.
-    #     :param names_only: If True, return only the names of the items in the result.
-    #     :return: The processed result.
-    #     """
-    #
-    #     print(result)
-    #
-    #     # -> If list of str, remove duplicates
-    #     if isinstance(result, list) and all(isinstance(item, str) for item in result):
-    #         result = list(set(result))
-    #
-    #     # -> Remove duplicates that share the same name
-    #     if isinstance(result, dict):
-    #         result = [result]
-    #     seen = set()
-    #     result = [item for item in result if item["name"] not in seen and not seen.add(item["name"])]
-    #
-    #     # -> Check if names_only is True
-    #     if names_only:
-    #         return [item["name"] for item in result]
-    #
-    #     return result
 
     # Goals to [...]
     def get_goals_associated_with_role(self, role_name: str, names_only: bool = True) -> list:
