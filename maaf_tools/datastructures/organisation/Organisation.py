@@ -6,6 +6,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from pprint import pprint
 import warnings
+from functools import wraps
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
@@ -25,6 +26,14 @@ except:
 
 
 class Organisation(MaafItem):
+    # Define required properties and their error messages
+    _REQUIRED_PROPERTIES = {
+        'fleet': "Fleet not set.",
+        'moise_model': "MOISE model not set.",
+        'role_allocation': "Role allocation not set.",
+        'allocation_specification': "Allocation specification not set."
+    }
+
     def __init__(self,
                  fleet = None,
                  moise_model: MoiseModel or dict = None,
@@ -62,6 +71,43 @@ class Organisation(MaafItem):
         """Returns a string representation of the organisation."""
         return self.__repr__()
 
+    # ============================================================== Misc
+    def _validate_properties(self, properties=None):
+        """Validates specified properties. If None, checks all required properties."""
+        props_to_check = self._REQUIRED_PROPERTIES.keys() if properties is None else properties
+        # For debugging, you might print the properties being checked.
+        for prop in props_to_check:
+            if prop not in self._REQUIRED_PROPERTIES:
+                raise ValueError(f"Property {prop} is not recognized for validation.")
+            if getattr(self, prop, None) is None:
+                raise ValueError(self._REQUIRED_PROPERTIES[prop])
+
+    @staticmethod
+    def check_properties_available(*props):
+        """
+        Decorator to validate specified properties before executing the method.
+        If no property names are provided, it validates all required properties.
+        """
+        # This branch handles the no-arguments case (when the decorator is applied without parentheses)
+        if len(props) == 1 and callable(props[0]):
+            func = props[0]
+
+            @wraps(func)
+            def wrapper(self, *args, **kwargs):
+                # With no explicit properties provided, validate all properties (pass None)
+                self._validate_properties()
+                return func(self, *args, **kwargs)
+            return wrapper
+
+        # This branch handles when property names are explicitly provided
+        def decorator(func):
+            @wraps(func)
+            def wrapper(self, *args, **kwargs):
+                # Validate only the specified properties
+                self._validate_properties(props)
+                return func(self, *args, **kwargs)
+            return wrapper
+        return decorator
     # ============================================================== Properties
     # ------------------------- Fleet
     @property
@@ -161,13 +207,15 @@ class Organisation(MaafItem):
             self.__allocation_specification.role_allocation = self.role_allocation
 
     # ============================================================== Check
-    def check_role_allocation_validity(self, stop_at_first_error = False, verbose = 1):
-        if self.role_allocation is None:
-            raise ValueError("Role allocation not set.")
+    @check_properties_available('fleet', 'role_allocation')
+    def check_role_allocation_validity(self, stop_at_first_error = False, verbose = 1) -> bool:
+        """
+        Check if the role allocation is valid with respect to the agents' skillsets and structural specification.
 
-        if self.fleet is None:
-            raise ValueError("Fleet not set.")
-
+        :param stop_at_first_error: When True, stops checking at the first error found.
+        :param verbose: When True, prints the errors found.
+        :return: bool
+        """
         # -> Checking the role allocation against the structural specification
         #     - Check if the role allocation is valid with respect to the structural specification
         #     - Check if the role allocation is valid with respect to the agents' skillsets and role skill requirements
@@ -180,7 +228,122 @@ class Organisation(MaafItem):
 
         return valid_wrt_structural_model
 
+    @check_properties_available('fleet', 'moise_model')
+    def agent_can_play_role(self, agent_id: str, role_name: str) -> bool:
+        """
+        Check if the agent can play the specified role. Done through comparing the agent's skills with the role's skill requirements.
+
+        :param agent_id: The ID of the agent.
+        :param role_name:  The name of the role.
+        :return: bool
+        """
+
+        # -> Get the agent skillset
+        agent_skillset = self.fleet[agent_id].skillset
+
+        # -> Get the role skill requirements
+        return self.moise_model.structural_specification.check_agent_role_compatibility(
+            agent_skillset=agent_skillset,
+            role_name=role_name
+            )
+
+    @check_properties_available('fleet', 'moise_model')
+    def agent_can_handle_goal_type(self, agent_id: str, goal_name: str) -> bool:
+        """
+        Check if the agent can handle the specified goal type. Done through comparing the agent's skills with the goal's skill requirements.
+
+        :param agent_id: The ID of the agent.
+        :param goal_name: The name of the goal.
+
+        :return: bool
+        """
+
+        # -> Get the agent skillset
+        agent_skillset = self.fleet[agent_id].skillset
+
+        # -> Get the goal skill requirements
+        return self.moise_model.structural_specification.check_agent_goal_compatibility(
+            agent_skillset=agent_skillset,
+            goal_name=goal_name
+            )
+
+    @check_properties_available('fleet', 'moise_model')
+    def agent_can_handle_mission_type(self, agent_id: str, mission_name: str) -> bool:
+        """
+        Check if the agent can handle the specified mission type. Done through comparing the agent's skills with the mission's skill requirements.
+
+        :param agent_id:
+        :param mission_name:
+        :return:
+        """
+
+        # -> Get the agent skillset
+        agent_skillset = self.fleet[agent_id].skillset
+
+        # -> Get the mission skill requirements
+        return self.moise_model.structural_specification.check_agent_mission_compatibility(
+            agent_skillset=agent_skillset,
+            mission_name=mission_name
+            )
+
     # ============================================================== Get
+    @check_properties_available('role_allocation')
+    def get_agent_roles(self, agent_id: str) -> list:
+        """
+        Get the roles played by the agent.
+
+        :param agent_id: The ID of the agent.
+        :return: list of roles played by the agent
+        """
+
+        # -> Get the roles played by the agent
+        return self.role_allocation.get_agent_roles(agent_id=agent_id)
+
+    @check_properties_available('role_allocation', 'moise_model')
+    def get_missions_handled_by_agent(self, agent_id: str) -> list:
+        """
+        Get the missions handled by the agent.
+
+        :param agent_id: The ID of the agent.
+        :return: list of missions handled by the agent
+        """
+
+        # -> Get the roles handled by the agent
+        roles = self.role_allocation.get_agent_roles(agent_id=agent_id)
+
+        # -> Get the missions associated with the roles
+        missions = []
+        for role in roles:
+            role_missions = self.moise_model.deontic_specification.get_missions_associated_with_role(role_name=role)
+            missions.extend(role_missions)
+
+        # -> Remove duplicates
+        missions = list(set(missions))
+
+        return missions
+
+    @check_properties_available('role_allocation', 'moise_model')
+    def get_goals_handled_by_agent(self, agent_id: str):
+        """
+        Get the goals handled by the agent.
+
+        :param agent_id: The ID of the agent.
+        :return:
+        """
+
+        # -> Get the roles handled by the agent
+        roles = self.role_allocation.get_agent_roles(agent_id=agent_id)
+
+        # -> Get the goals associated with the roles
+        goals = []
+        for role in roles:
+            role_goals = self.moise_model.functional_specification.get_goals_associated_with_role(role_name=role)
+            goals.extend(role_goals)
+
+        # -> Remove duplicates
+        goals = list(set(goals))
+
+        return goals
 
     # ============================================================== Set
 
@@ -229,15 +392,13 @@ class Organisation(MaafItem):
     # ============================================================== Remove
 
     # ============================================================== Plot
+    @check_properties_available('role_allocation')
     def plot_team_structure(self) -> None:
         """
         Plots the group instance hierarchy and overlays role assignments from the team allocation.
         Now, each agent is represented as a smaller node attached to the team (instance) they belong to.
         Each node label displays the name first, the id below in brackets, and the roles below that (if applicable).
         """
-        if self.role_allocation is None:
-            raise ValueError("Role allocation not set.")
-
         group_instances = self.role_allocation.get("group_instances", [])
         G = nx.DiGraph()
 
@@ -324,6 +485,7 @@ class Organisation(MaafItem):
              allocation_specification=item_dict["allocation_specification"]
          )
 
+    @check_properties_available
     def save_to_file(self,
                      filename: str,
                      organisation: bool = True,

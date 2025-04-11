@@ -148,7 +148,7 @@ class DeonticSpecification(dict, MaafItem):
 
         return list(skills)
 
-    def get_role_associated_with_mission(self, mission_name: str) -> list:
+    def get_role_associate_with_mission(self, mission_name: str) -> list:
         """
         Gets the roles associated with a specific mission type.
 

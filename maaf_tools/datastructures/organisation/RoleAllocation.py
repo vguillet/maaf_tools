@@ -224,7 +224,27 @@ class RoleAllocation(dict, MaafItem):
                         else:
                             # If no group ID is provided, get all roles
                             roles.extend(assignment["roles"])
+                break
         return roles
+
+    def get_agent_missions(self, agent_id: str, group_id: str = None) -> list:
+        """
+        Get the missions for a specific agent ID. If a group ID is provided, filter missions by that group.
+
+        :param agent_id: The ID of the agent.
+        :return: List of missions.
+        """
+        missions = []
+        for member in self.get("team", []):
+            if member["id"] == agent_id:
+                for assignment in member["assignments"]:
+                    if group_id is None or assignment["instance"] == group_id:
+                        if assignment["instance"] == group_id:
+                            missions.extend(assignment["missions"])
+                        else:
+                            # If no group ID is provided, get all missions
+                            missions.extend(assignment["missions"])
+        return missions
 
     def get_agents_in_group(self, group_id: str) -> list:
         """R
