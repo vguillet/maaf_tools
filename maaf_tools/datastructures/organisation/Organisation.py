@@ -262,10 +262,10 @@ class Organisation(MaafItem):
         agent_skillset = self.fleet[agent_id].skillset
 
         # -> Get the goal skill requirements
-        return self.moise_model.check_agent_goal_compatibility(
+        return self.moise_model.check_agent_skillset_goal_compatibility(
             agent_skillset=agent_skillset,
             goal_name=goal_name
-            )
+        )
 
     @check_properties_available('fleet', 'moise_model')
     def agent_can_handle_mission_type(self, agent_id: str, mission_name: str) -> bool:
