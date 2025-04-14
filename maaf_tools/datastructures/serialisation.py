@@ -27,7 +27,6 @@ try:
     
     # -> Tasklog
     from maaf_tools.datastructures.task.Task import Task
-    from maaf_tools.datastructures.task.TaskGraph import TaskGraph
     from maaf_tools.datastructures.task.TaskLog import TaskLog
     
 except:
@@ -51,7 +50,6 @@ except:
     
     # -> Tasklog
     from maaf_tools.maaf_tools.datastructures.task.Task import Task
-    from maaf_tools.maaf_tools.datastructures.task.TaskGraph import TaskGraph
     from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
 
 ##################################################################################################################
@@ -93,7 +91,6 @@ types_str_class_dict = {
 
     # Tasklog
     "Task": Task,
-    "TaskGraph": TaskGraph,
     "TaskLog": TaskLog,
 
     # Organisation

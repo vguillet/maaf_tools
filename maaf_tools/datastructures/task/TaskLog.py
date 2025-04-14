@@ -13,15 +13,12 @@ try:
     from maaf_tools.datastructures.MaafList import MaafList
 
     from maaf_tools.datastructures.task.Task import Task
-    from maaf_tools.datastructures.task.TaskGraph import TaskGraph
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.MaafList import MaafList
 
     from maaf_tools.maaf_tools.datastructures.task.Task import Task
-    from maaf_tools.maaf_tools.datastructures.task.TaskGraph import TaskGraph
-
 
 ##################################################################################################################
 
@@ -139,52 +136,6 @@ class TaskLog(MaafList):
             filtered_tasks = [task for task in filtered_tasks if task.status == status]
 
         return filtered_tasks
-
-    # TODO: Delete after env management refactor
-    # def get_sequence_paths(self,
-    #                        node_sequence: List[str],
-    #                        requirement: Optional[List[str]] = None,
-    #                        selection: str = "shortest"   # "shortest", "longest", "random", "all"
-    #                        ) -> (list[dict], list):
-    #     """
-    #     Get a path from the graph.
-    #
-    #     :param node_sequence: The sequence of nodes to get the path for.
-    #     :param requirement: The acceptable requirements for the path.
-    #     :param selection: The selection method for the path if multiple meet the requirements. "shortest", "longest", "random", "all"
-    #
-    #     :return: The path between the nodes.
-    #     """
-    #
-    #     return self.task_graph.get_sequence_paths(
-    #         node_sequence=node_sequence,
-    #         requirement=requirement,
-    #         selection=selection
-    #     )
-    #
-    # def get_path(self,
-    #              source: str,
-    #              target: str,
-    #              requirement: Optional[List[str]] = None,
-    #              selection: str = "shortest"   # "shortest", "longest", "random", "all
-    #              ) -> List[dict] or dict or None:
-    #     """
-    #     Get a path from the graph. Return all the existing paths between two nodes meeting the requirements.
-    #
-    #     :param source: The source node of the path.
-    #     :param target: The target node of the path.
-    #     :param requirement: The acceptable requirements for the path.
-    #     :param selection: The selection method for the path if multiple meet the requirements. "shortest", "longest", "random", "all"
-    #
-    #     :return: The path(s) between the nodes.
-    #     """
-    #
-    #     return self.task_graph.get_path(
-    #         source=source,
-    #         target=target,
-    #         requirement=requirement,
-    #         selection=selection
-    #     )
 
     # ============================================================== Set
     def set_task_status(self,
@@ -363,37 +314,6 @@ class TaskLog(MaafList):
             success = self.add_item_by_dict(item_data=task)
 
         return success
-
-    # TODO: Delete after env management refactor
-    # def add_path(self,
-    #              source_node: str,
-    #              target_node: str,
-    #              path: dict or List[dict],
-    #              two_way: bool = True,
-    #              selection: str = "latest",   # "shortest", "longest", "random", "latest", "all"
-    #              ) -> None:
-    #     """
-    #     Add a path to the graph.
-    #
-    #     :param source_node: The source node of the path.
-    #     :param target_node: The target node of the path.
-    #     :param path: The path to add.
-    #     :param two_way: Whether to add the path in both directions.
-    #     :param selection: The selection method for the path if multiple meet the requirements.
-    #         "shortest" : Replace the current shortest path with the new path if the new path is shorter.
-    #         "longest"  : Replace the current longest path with the new path if the new path is longer.
-    #         "random"   : Randomly replace a path with the new path.
-    #         "latest"   : Replace all current paths with the new path.
-    #         "all"      : Keep all paths. Add the new path to the list of paths.
-    #     """
-    #
-    #     self.task_graph.add_path(
-    #         source_node=source_node,
-    #         target_node=target_node,
-    #         path=path,
-    #         two_way=two_way,
-    #         selection=selection
-    #     )
 
     # ============================================================== Remove
     def remove_task(self, task: int or str or item_class or List[int or str or item_class]) -> bool or list[bool]:

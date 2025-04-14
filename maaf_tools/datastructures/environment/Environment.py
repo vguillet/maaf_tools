@@ -6,6 +6,7 @@ from functools import partial
 from pprint import pprint
 import warnings
 import math
+import matplotlib.pyplot as plt
 
 import networkx as nx
 from networkx.algorithms.shortest_paths.generic import shortest_path
@@ -15,10 +16,14 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.datastructures.agent.Fleet import Fleet
+    from maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.tools import loads, dumps
 
 except ImportError:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
+    from maaf_tools.maaf_tools.datastructures.agent.Fleet import Fleet
+    from maaf_tools.maaf_tools.datastructures.task.TaskLog import TaskLog
     from maaf_tools.maaf_tools.tools import loads, dumps, convert_graph_gps_to_ecef
 
 ##################################################################################################################
@@ -417,6 +422,59 @@ class Environment(MaafItem):
 
     # ============================================================== Remove
 
+    # ============================================================== Draw
+    def plot_env(self, fleet: Fleet = None, tasklog: TaskLog = None):
+        """
+        # TODO: Re-implement in generic way
+        Plot the environment graph using matplotlib.
+        """
+
+        # -> Check if the graph is a valid NetworkX graph
+        if not isinstance(self.graph, nx.Graph):
+            raise TypeError("Graph must be a NetworkX graph.")
+
+        # -> Draw the graph nodes
+        plt.figure(figsize=(10, 10))
+        plt.scatter(
+            *zip(*self.pos2D.values()),
+            color='blue',
+            label='Graph Nodes',
+            alpha=0.5,
+            s=300,
+            edgecolors='black',
+            linewidth=0.5
+        )
+
+        # -> Draw the graph edges
+        nx.draw_networkx_edges(self.graph, pos=self.pos2D, alpha=0.5, edge_color='gray')
+
+        # -> If fleet is provided, draw the fleet nodes
+        if fleet is not None:
+            agent_node_pos = []
+            for agent in fleet:
+                if [agent.state.x, agent.state.y] != [0, 0]:
+                    agent_node_pos.append([agent.state.x, agent.state.y])
+
+            # -> Draw the fleet nodes
+            plt.scatter(*zip(*agent_node_pos), color='red', label='Fleet Nodes')
+            plt.legend()
+
+        if tasklog is not None:
+            task_node_pos = []
+
+            for task in tasklog:
+                task_node_pos.append([task.instructions["x"], task.instructions["y"]])
+
+            # -> Draw the task nodes
+            plt.scatter(*zip(*task_node_pos), color='green', label='Task Nodes')
+            plt.legend()
+
+        # -> Show the plot
+        plt.title(f"Environment: {self.name}")
+        plt.xlabel("X Coordinate")
+        plt.ylabel("Y Coordinate")
+        plt.show()
+
     # ============================================================== Serialization / Parsing
     def asdict(self, include_local: bool = False) -> dict:
         """
@@ -545,3 +603,4 @@ if __name__ == "__main__":
 
     env_from_dict = Environment.from_dict(env_dict)
     print("Check 4:", env_from_dict)
+
