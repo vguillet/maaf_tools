@@ -210,6 +210,31 @@ class Environment(MaafItem):
         return True
 
     # ============================================================== Get
+    def get_node_pos2D(self, node_id: str) -> tuple[float, float] or None:
+        """
+        Get the 2D position of a node.
+
+        :param node_id: ID of the node.
+        :return: The 2D position of the node.
+        """
+        if isinstance(self.graph, nx.Graph):
+            pos = self.pos2D
+            return pos.get(node_id, None)
+        else:
+            return None
+
+    def get_node_pos3D(self, node_id: str) -> tuple[float, float, float] or None:
+        """
+        Get the 3D position of a node.
+
+        :param node_id: ID of the node.
+        :return: The 3D position of the node.
+        """
+        if isinstance(self.graph, nx.Graph):
+            pos = self.pos3D
+            return pos.get(node_id, None)
+        else:
+            return None
 
     def get_nearest_node(self,
                          loc: tuple[float, float],
@@ -423,10 +448,16 @@ class Environment(MaafItem):
     # ============================================================== Remove
 
     # ============================================================== Draw
-    def plot_env(self, fleet: Fleet = None, tasklog: TaskLog = None):
+    def plot_env(self,
+                 fleet: Fleet = None,
+                 tasklog: TaskLog = None,
+                 nodes_to_plot: dict = {}
+                 ):
         """
         # TODO: Re-implement in generic way
         Plot the environment graph using matplotlib.
+
+        nodes_to_plot: A dictionary of nodes to plot, where the keys are the reference of the node set, and the values are a list of node IDs
         """
 
         # -> Check if the graph is a valid NetworkX graph
@@ -456,18 +487,43 @@ class Environment(MaafItem):
                     agent_node_pos.append([agent.state.x, agent.state.y])
 
             # -> Draw the fleet nodes
-            plt.scatter(*zip(*agent_node_pos), color='red', label='Fleet Nodes')
-            plt.legend()
+            if agent_node_pos:
+                plt.scatter(*zip(*agent_node_pos), color='red', label='Fleet Nodes')
+                plt.legend()
 
         if tasklog is not None:
             task_node_pos = []
-
             for task in tasklog:
                 task_node_pos.append([task.instructions["x"], task.instructions["y"]])
 
             # -> Draw the task nodes
-            plt.scatter(*zip(*task_node_pos), color='green', label='Task Nodes')
-            plt.legend()
+            if task_node_pos:
+                plt.scatter(*zip(*task_node_pos), color='green', label='Task Nodes')
+                plt.legend()
+
+        # -> Draw the nodes to plot
+        for node_set, node_ids in nodes_to_plot.items():
+            # -> Set color and marker type
+            if node_set == "blocked_nodes":
+                color = 'orange'
+                marker = 'x'
+                s = 150
+                linewidth = 1.5
+
+            elif node_set == "base_node":
+                color = 'purple'
+                marker = 's'
+                s = 100
+                linewidth = 0.5
+
+            else:
+                color = 'black'
+                marker = 'o'
+                s = 50
+                linewidth = 0.5
+
+            node_pos = [self.pos2D[node_id] for node_id in node_ids if node_id in self.pos2D]
+            plt.scatter(*zip(*node_pos), label=node_set, color=color, marker=marker, alpha=1, s=s, edgecolors='black', linewidth=linewidth)
 
         # -> Show the plot
         plt.title(f"Environment: {self.name}")

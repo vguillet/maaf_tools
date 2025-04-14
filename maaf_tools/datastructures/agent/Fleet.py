@@ -182,7 +182,7 @@ class Fleet(MaafList):
               remove_agent_callback: Optional[callable] = None,
               fleet_state_change_callback: Optional[callable] = None,
               prioritise_local: bool = False,
-              logger=None,
+              robust_merge: bool = False,
               *args, **kwargs
               ) -> bool:
         """
@@ -193,6 +193,7 @@ class Fleet(MaafList):
         :param remove_agent_callback: A callback function to call when an agent is removed from the fleet.
         :param fleet_state_change_callback: A callback function to call at the end of the merge if the fleet state has changed.
         :param prioritise_local: Whether to prioritise the local fleet over the new fleet.
+        :param robust_merge: Whether to perform a robust merge (a merge that will not fail even if the agents signatures do not match).
 
         :return: A boolean indicating whether the fleet state has changed.
         """
@@ -234,6 +235,7 @@ class Fleet(MaafList):
                 agent_state_change, agent_plan_change, agent_enabled, agent_disabled = self[agent.id].merge(
                     agent=agent,
                     prioritise_local=prioritise_local,
+                    robust_merge=robust_merge
                     *args, **kwargs
                 )
 

@@ -94,6 +94,7 @@ class Task(MaafItem):
     def merge(self,
               task: "Task",
               prioritise_local: bool = False,
+              robust_merge: bool = False,
               *args, **kwargs
               ) -> (bool, bool):
         """
@@ -101,6 +102,7 @@ class Task(MaafItem):
 
         :param task: The task to merge with.
         :param prioritise_local: Whether to prioritise the local fields when merging (add only).
+        :param robust_merge: Whether to perform a robust merge (a merge that will not fail even if the signatures do not match).
 
         :return: A tuple containing the success of the merge and whether the task has been terminated.
         """
@@ -110,7 +112,7 @@ class Task(MaafItem):
             raise ValueError(f"!!! Task merge failed: Task is not of type Task: {type(task)} !!!")
 
         # -> Verify that the tasks signatures match
-        if task.signature != self.signature:
+        if task.signature != self.signature and not robust_merge:
             raise ValueError(f"!!! Task merge failed: Task signatures do not match: {self.signature} != {task.signature} !!!")
 
         # -> Check if the task is the same as the current task

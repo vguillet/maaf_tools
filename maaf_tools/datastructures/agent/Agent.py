@@ -221,6 +221,7 @@ class Agent(MaafItem):
     def merge(self,
               agent: "Agent",
               prioritise_local: bool = False,
+              robust_merge: bool = False,
               *args, **kwargs
               ) -> (bool, bool, bool, bool):
         """
@@ -228,6 +229,7 @@ class Agent(MaafItem):
 
         :param agent: The agent to merge with.
         :param prioritise_local: Whether to prioritise the local fields when merging (add only).
+        :param robust_merge: Whether to perform a robust merge (a merge that will not fail even if the signatures do not match).
 
         :return: A tuple containing the success of the merge and whether the agent has been enabled or disabled.
             - agent_state_change: Whether the agent state has changed.
@@ -242,7 +244,7 @@ class Agent(MaafItem):
             raise ValueError(f"!!! Agent merge failed: Agent is not of type Agent: {type(agent)} !!!")
 
         # -> Verify that the agents signatures match
-        if agent.signature != self.signature:
+        if agent.signature != self.signature and not robust_merge:
             raise ValueError(f"!!! Agent merge failed: Agent signatures do not match: {self.signature} != {agent.signature} !!!")
 
         # -> Check if the agent is the same as the current agent

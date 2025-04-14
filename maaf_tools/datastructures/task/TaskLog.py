@@ -224,6 +224,7 @@ class TaskLog(MaafList):
               terminate_task_callback: Optional[callable] = None,
               tasklog_state_change_callback: Optional[callable] = None,
               prioritise_local: bool = False,
+              robust_merge: bool = False,
               *args, **kwargs
               ) -> bool:
         """
@@ -234,6 +235,7 @@ class TaskLog(MaafList):
         :param terminate_task_callback: A callback function to call when a task is terminated in the task log.
         :param tasklog_state_change_callback: A callback function to call at the end of the merge if the task log state has changed.
         :param prioritise_local: Whether to prioritise the local fields when merging (add only).
+        :param robust_merge: Whether to perform a robust merge (a merge that will not fail even if the tasks signatures do not match).
 
         :return: A boolean indicating whether the tasklog state has changed
         """
@@ -274,7 +276,8 @@ class TaskLog(MaafList):
             else:
                 task_state_change, task_terminated = self[task.id].merge(
                     task=task,
-                    prioritise_local=prioritise_local
+                    prioritise_local=prioritise_local,
+                    robust_merge=robust_merge
                     *args, **kwargs
                 )
 
