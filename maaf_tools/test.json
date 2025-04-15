@@ -1,0 +1,100 @@
+{
+    "spot_easy": {
+        "specs": {},
+        "skillsets": [
+            "init_power",
+            "safe_poweroff",
+            "standup",
+            "sitdown",
+            "go_to"
+        ]
+    },
+    "auv_skillset": {
+        "specs": {},
+        "skillsets": [
+            "e_stop",
+            "stay",
+            "dive_straight",
+            "reach_surface",
+            "go_to_body",
+            "go_to_waypoint",
+            "teleop",
+            "skill_transect"
+        ]
+    },
+    "uav": {
+        "specs": {},
+        "skillsets": [
+            "ask_authority",
+            "capture_origin",
+            "takeoff",
+            "landing",
+            "goto_waypoint",
+            "goto_straight",
+            "goto_relative",
+            "set_heading",
+            "follow_path",
+            "follow_path_straight"
+        ]
+    },
+    "manipulator": {
+        "specs": {},
+        "skillsets": [
+            "arm_moving_manual",
+            "arm_moving_goaldriven",
+            "arm_moving_interaction",
+            "arm_moving_pickplace",
+            "arm_moving_to_HP"
+        ]
+    },
+    "spot_and_arm": {
+        "specs": {},
+        "skillsets": [
+            "init_power",
+            "safe_poweroff",
+            "standup",
+            "sitdown",
+            "spot_go_to",
+            "teleop",
+            "joystick_articular",
+            "goto_articular"
+        ]
+    },
+    "manipulator_explosion": {
+        "specs": {},
+        "skillsets": [
+            "joystick_articular"
+        ]
+    },
+    "ugv": {
+        "specs": {},
+        "skillsets": [
+            "capture_origin",
+            "goto_body",
+            "goto_waypoint",
+            "rotate",
+            "follow_path"
+        ]
+    },
+    "spot": {
+        "specs": {},
+        "skillsets": [
+            "init_power",
+            "safe_poweroff",
+            "standup",
+            "sitdown",
+            "go_to_body",
+            "go_to_graphnav",
+            "go_to_waypoint",
+            "capture_origin",
+            "set_heading",
+            "teleop"
+        ]
+    },
+    "infrared_camera": {
+        "specs": {},
+        "skillsets": [
+            "detect_heatpoints"
+        ]
+    }
+}
