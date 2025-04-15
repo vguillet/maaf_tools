@@ -503,6 +503,11 @@ class Environment(MaafItem):
 
         # -> Draw the nodes to plot
         for node_set, node_ids in nodes_to_plot.items():
+            if not node_ids:
+                # -> Add text on the plot
+                plt.text(0.5, 0.5, f"No nodes to plot for {node_set}", fontsize=12, ha='center', va='center')
+                continue
+
             # -> Set color and marker type
             if node_set == "blocked_nodes":
                 color = 'orange'
@@ -516,6 +521,18 @@ class Environment(MaafItem):
                 s = 100
                 linewidth = 0.5
 
+            elif node_set == "agents_nodes":
+                color = 'green'
+                marker = 'D'
+                s = 50
+                linewidth = 0.5
+
+            elif node_set == "enemy_nodes":
+                color = 'red'
+                marker = 'D'
+                s = 50
+                linewidth = 0.5
+
             else:
                 color = 'black'
                 marker = 'o'
@@ -524,6 +541,7 @@ class Environment(MaafItem):
 
             node_pos = [self.pos2D[node_id] for node_id in node_ids if node_id in self.pos2D]
             plt.scatter(*zip(*node_pos), label=node_set, color=color, marker=marker, alpha=1, s=s, edgecolors='black', linewidth=linewidth)
+            plt.legend()
 
         # -> Show the plot
         plt.title(f"Environment: {self.name}")
