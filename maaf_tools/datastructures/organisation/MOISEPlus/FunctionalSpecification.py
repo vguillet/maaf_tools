@@ -5,9 +5,7 @@ import json
 from pprint import pprint
 import warnings
 
-from bloom.generators.rpm.generate_cmd import description
-
-#from typing import Self
+# from typing import Self
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
@@ -23,10 +21,11 @@ class FunctionalSpecification(dict, MaafItem):
     A class representing the functional specification of a MOISE+ model.
     The functional specification provides the mapping between the system's goals, plans, and missions.
     """
+
     def __init__(self,
                  functional_specification: dict or "FunctionalSpecification" = None,
-                 structural_specification = None,
-                 deontic_specification = None
+                 structural_specification=None,
+                 deontic_specification=None
                  ):
         # If no specification is provided, use the default template.
         if functional_specification is None:
@@ -41,10 +40,12 @@ class FunctionalSpecification(dict, MaafItem):
             functional_specification = functional_specification.copy()
 
         elif not isinstance(functional_specification, dict) or not isinstance(functional_specification, FunctionalSpecification):
-            raise ValueError("The functional specification must be a dictionary or FunctionalSpecification object.")
+            raise ValueError(
+                "The functional specification must be a dictionary or FunctionalSpecification object.")
 
         if not self.check_specification_definition(functional_specification=functional_specification, verbose=1):
-            raise ValueError("The provided functional specification is not valid")
+            raise ValueError(
+                "The provided functional specification is not valid")
 
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(functional_specification)
@@ -90,7 +91,8 @@ class FunctionalSpecification(dict, MaafItem):
     # ============================================================== Check
     @staticmethod
     def check_specification_definition(functional_specification, stop_at_first_error: bool = False, verbose: int = 1) -> bool:
-        warnings.warn("Checking functional specification definition is not implemented yet.")
+        warnings.warn(
+            "Checking functional specification definition is not implemented yet.")
         return True
 
     # ============================================================== Get
@@ -157,9 +159,11 @@ class FunctionalSpecification(dict, MaafItem):
         """
         # Validate incoming specification
         if not isinstance(functional_specification, FunctionalSpecification):
-            raise ValueError("The functional specification must be a FunctionalSpecification object.")
+            raise ValueError(
+                "The functional specification must be a FunctionalSpecification object.")
         if not self.check_specification_definition(functional_specification=functional_specification, stop_at_first_error=True):
-            raise ValueError("The provided functional specification is not valid")
+            raise ValueError(
+                "The provided functional specification is not valid")
 
         # Iterate over incoming social schemes
         for incoming_scheme in functional_specification.get("social_schemes", []):
@@ -235,7 +239,8 @@ class FunctionalSpecification(dict, MaafItem):
 
         # Validate the merged specification
         if not self.check_specification_definition(functional_specification=self, stop_at_first_error=True):
-            raise ValueError("The merged functional specification is not valid")
+            raise ValueError(
+                "The merged functional specification is not valid")
 
         return True
 
@@ -262,7 +267,8 @@ class FunctionalSpecification(dict, MaafItem):
         # Check if the social scheme already exists
         existing_scheme = self.get_social_scheme(social_scheme_type)
         if existing_scheme is not None:
-            raise ValueError(f"Social scheme with name '{social_scheme_type}' already exists in the functional specification.")
+            raise ValueError(
+                f"Social scheme with name '{social_scheme_type}' already exists in the functional specification.")
 
         # -> Construct the social scheme
         scheme = {
@@ -281,7 +287,8 @@ class FunctionalSpecification(dict, MaafItem):
         if goals is not None:
             for goal in goals:
                 # Separate **kwargs from the goal dictionary
-                goal_kwargs = {k: v for k, v in goal.items() if k not in ["name", "description", "skill_requirements"]}
+                goal_kwargs = {k: v for k, v in goal.items() if k not in [
+                    "name", "description", "skill_requirements"]}
 
                 self.add_goal(
                     social_scheme_type=social_scheme_type,
@@ -295,7 +302,8 @@ class FunctionalSpecification(dict, MaafItem):
         if plans is not None:
             for plan in plans:
                 # Separate **kwargs from the plan dictionary
-                plan_kwargs = {k: v for k, v in plan.items() if k not in ["name", "goal_sequence"]}
+                plan_kwargs = {k: v for k, v in plan.items() if k not in [
+                    "name", "goal_sequence"]}
 
                 self.add_plan(
                     social_scheme_type=social_scheme_type,
@@ -308,7 +316,8 @@ class FunctionalSpecification(dict, MaafItem):
         if missions is not None:
             for mission in missions:
                 # Separate **kwargs from the mission dictionary
-                mission_kwargs = {k: v for k, v in mission.items() if k not in ["name", "description", "goals", "assignment_cardinality"]}
+                mission_kwargs = {k: v for k, v in mission.items() if k not in [
+                    "name", "description", "goals", "assignment_cardinality"]}
 
                 self.add_mission(
                     social_scheme_type=social_scheme_type,
@@ -340,7 +349,8 @@ class FunctionalSpecification(dict, MaafItem):
         # Check if the goal already exists
         existing_goal = self.get_goal(goal_name)
         if existing_goal is not None:
-            raise ValueError(f"Goal with name '{goal_name}' already exists in the functional specification.")
+            raise ValueError(
+                f"Goal with name '{goal_name}' already exists in the functional specification.")
 
         # -> Construct the goal
         goal = {
@@ -355,7 +365,8 @@ class FunctionalSpecification(dict, MaafItem):
         if scheme is not None:
             scheme["goals"].append(goal)
         else:
-            raise ValueError(f"Social scheme '{social_scheme_type}' not found.")
+            raise ValueError(
+                f"Social scheme '{social_scheme_type}' not found.")
 
     def add_mission(self,
                     social_scheme_type: str,
@@ -380,33 +391,40 @@ class FunctionalSpecification(dict, MaafItem):
         # Check if the mission already exists
         existing_mission = self.get_mission(mission_type)
         if existing_mission is not None:
-            raise ValueError(f"Mission with name '{mission_type}' already exists in the functional specification.")
+            raise ValueError(
+                f"Mission with name '{mission_type}' already exists in the functional specification.")
 
         # Check if the assignment_cardinality has the required keys
         required_keys = ["min", "max"]
         for key in required_keys:
             if key not in assignment_cardinality:
-                raise ValueError(f"Mission assignment_cardinality must contain the key '{key}'.")
+                raise ValueError(
+                    f"Mission assignment_cardinality must contain the key '{key}'.")
 
         # Check if the min is an integer
         if not isinstance(assignment_cardinality["min"], int):
-            raise ValueError("Mission assignment_cardinality min must be an integer.")
+            raise ValueError(
+                "Mission assignment_cardinality min must be an integer.")
         # Check if the max is an integer or None
         if not isinstance(assignment_cardinality["max"], (int, type(None))):
-            raise ValueError("Mission assignment_cardinality max must be an integer or None.")
+            raise ValueError(
+                "Mission assignment_cardinality max must be an integer or None.")
 
         # Check if the min is greater than or equal to 0
         if assignment_cardinality["min"] < 0:
-            raise ValueError("Mission assignment_cardinality min must be greater than or equal to 0.")
+            raise ValueError(
+                "Mission assignment_cardinality min must be greater than or equal to 0.")
         # Check if the max is greater than or equal to the min
         if assignment_cardinality["max"] is not None and assignment_cardinality["max"] < assignment_cardinality["min"]:
-            raise ValueError("Mission assignment_cardinality max must be greater than or equal to min.")
+            raise ValueError(
+                "Mission assignment_cardinality max must be greater than or equal to min.")
 
         # Check if the goals are valid
         for goal_name in goals:
             goal = self.get_goal(goal_name)
             if goal is None:
-                raise ValueError(f"Goal with name '{goal_name}' not found in the functional specification.")
+                raise ValueError(
+                    f"Goal with name '{goal_name}' not found in the functional specification.")
 
         # -> Construct the mission
         mission = {
@@ -422,7 +440,8 @@ class FunctionalSpecification(dict, MaafItem):
         if scheme is not None:
             scheme["missions"].append(mission)
         else:
-            raise ValueError(f"Social scheme '{social_scheme_type}' not found.")
+            raise ValueError(
+                f"Social scheme '{social_scheme_type}' not found.")
 
     def add_plan(self,
                  social_scheme_type: str,
@@ -443,15 +462,18 @@ class FunctionalSpecification(dict, MaafItem):
         # Check if a plan already exists with the same name
         existing_plan = self.get_plan(plan_type)
         if existing_plan is not None:
-            raise ValueError(f"Plan with name '{plan_type}' already exists in the functional specification.")
+            raise ValueError(
+                f"Plan with name '{plan_type}' already exists in the functional specification.")
 
         # Check if the keys in the plan are valid goal IDs
         for goal in goal_sequence:
             if not isinstance(goal, str):
-                raise ValueError(f"Plan goal name must be a string. Found: {goal}")
+                raise ValueError(
+                    f"Plan goal name must be a string. Found: {goal}")
             goal_spec = self.get_goal(goal)
             if goal_spec is None:
-                raise ValueError(f"Goal with name '{goal}' not found in the functional specification.")
+                raise ValueError(
+                    f"Goal with name '{goal}' not found in the functional specification.")
 
         # -> Construct the plan
         plan = {
@@ -465,7 +487,8 @@ class FunctionalSpecification(dict, MaafItem):
         if scheme is not None:
             scheme["plans"].append(plan)
         else:
-            raise ValueError(f"Social scheme '{social_scheme_type}' not found.")
+            raise ValueError(
+                f"Social scheme '{social_scheme_type}' not found.")
 
     # ============================================================== Remove
     def remove_social_scheme(self, social_scheme_type: str) -> bool:
@@ -531,6 +554,7 @@ class FunctionalSpecification(dict, MaafItem):
         """
         return self
 
+
 # Test Script with Asserts to verify the merge method for FunctionalSpecification
 if __name__ == "__main__":
     functional_spec = FunctionalSpecification()
@@ -538,36 +562,57 @@ if __name__ == "__main__":
         social_scheme_type="Operational Agents: Surveillance and Interdiction",
         description="A comprehensive set of surveillance and interdiction objectives",
         goals=[
-            {"name": "g_point_obs", "description": "A point was observed", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_axis_obs", "description": "An axis was observed", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_zone_obs", "description": "A zone was observed", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_point_mon", "description": "A point is monitored", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_axis_mon", "description": "An axis is monitored", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_axis_patrol", "description": "An axis is patrolled", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_zone_patrol", "description": "A zone is patrolled", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_path_interdict", "description": "A path is interdicted (Obstructed or Trapped)", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_path_obstruct", "description": "A path is obstructed", "skill_requirements": ["goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_path_trap", "description": "A path is trapped", "skill_requirements": ["goto", "trap"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_target_track", "description": "A target is tracked", "skill_requirements": ["track"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
-            {"name": "g_target_neutral", "description": "A target is neutralised", "skill_requirements": ["neutralise"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"}
+            {"name": "g_point_obs", "description": "A point was observed", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_axis_obs", "description": "An axis was observed", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_zone_obs", "description": "A zone was observed", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_point_mon", "description": "A point is monitored", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_axis_mon", "description": "An axis is monitored", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_axis_patrol", "description": "An axis is patrolled", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_zone_patrol", "description": "A zone is patrolled", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_path_interdict", "description": "A path is interdicted (Obstructed or Trapped)", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_path_obstruct", "description": "A path is obstructed", "skill_requirements": [
+                "goto"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_path_trap", "description": "A path is trapped", "skill_requirements": [
+                "goto", "trap"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_target_track", "description": "A target is tracked", "skill_requirements": [
+                "track"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"},
+            {"name": "g_target_neutral", "description": "A target is neutralised", "skill_requirements": [
+                "neutralise"], "bidding_logic": "GraphWeightedManhattanDistanceBundleBid"}
         ],
         plans=[
-            #{"name": "g_point_obs", "goal_sequence": ["g_point_obs"]},
+            # {"name": "g_point_obs", "goal_sequence": ["g_point_obs"]},
         ],
         missions=[
-            {"name": "m_scouting", "description": "Scouting mission", "goals": ["g_point_obs", "g_axis_obs", "g_zone_obs"], "assignment_cardinality": {"min": 1, "max": None}},
-            {"name": "m_monitoring", "description": "Monitoring mission", "goals": ["g_point_mon", "g_axis_mon"], "assignment_cardinality": {"min": 1, "max": None}},
-            {"name": "m_patrolling", "description": "Patrolling mission", "goals": ["g_axis_patrol", "g_zone_patrol"], "assignment_cardinality": {"min": 1, "max": None}},
-            {"name": "m_interdiction", "description": "Interdiction mission", "goals": ["g_path_interdict"], "assignment_cardinality": {"min": 1, "max": None}},
-            {"name": "m_obstructing", "description": "Obstructing mission", "goals": ["g_path_obstruct"], "assignment_cardinality": {"min": 1, "max": None}},
-            {"name": "m_trapping", "description": "Trapping mission", "goals": ["g_path_trap"], "assignment_cardinality": {"min": 1, "max": None}},
-            {"name": "m_tracking", "description": "Tracking mission", "goals": ["g_target_track"], "assignment_cardinality": {"min": 1, "max": None}},
-            {"name": "m_neutralising", "description": "Neutralising mission", "goals": ["g_target_neutral"], "assignment_cardinality": {"min": 1, "max": None}}
+            {"name": "m_scouting", "description": "Scouting mission", "goals": [
+                "g_point_obs", "g_axis_obs", "g_zone_obs"], "assignment_cardinality": {"min": 1, "max": None}},
+            {"name": "m_monitoring", "description": "Monitoring mission", "goals": [
+                "g_point_mon", "g_axis_mon"], "assignment_cardinality": {"min": 1, "max": None}},
+            {"name": "m_patrolling", "description": "Patrolling mission", "goals": [
+                "g_axis_patrol", "g_zone_patrol"], "assignment_cardinality": {"min": 1, "max": None}},
+            {"name": "m_interdiction", "description": "Interdiction mission", "goals": [
+                "g_path_interdict"], "assignment_cardinality": {"min": 1, "max": None}},
+            {"name": "m_obstructing", "description": "Obstructing mission", "goals": [
+                "g_path_obstruct"], "assignment_cardinality": {"min": 1, "max": None}},
+            {"name": "m_trapping", "description": "Trapping mission", "goals": [
+                "g_path_trap"], "assignment_cardinality": {"min": 1, "max": None}},
+            {"name": "m_tracking", "description": "Tracking mission", "goals": [
+                "g_target_track"], "assignment_cardinality": {"min": 1, "max": None}},
+            {"name": "m_neutralising", "description": "Neutralising mission", "goals": [
+                "g_target_neutral"], "assignment_cardinality": {"min": 1, "max": None}}
         ],
     )
 
-    functional_spec.save_to_file("icare_alloc_config/icare_alloc_config/moise_functional_specification.json")
-    #print(functional_spec.goals)
+    functional_spec.save_to_file(
+        "icare_alloc_config/icare_alloc_config/moise_functional_specification.json")
+    # print(functional_spec.goals)
 
     # Create a local functional specification with one social scheme.
     local_func_spec_dict = {
@@ -576,7 +621,8 @@ if __name__ == "__main__":
                 "name": "SchemeA",
                 "description": "Local scheme A description.",
                 "goals": [
-                    {"name": "goal1", "description": "Local goal 1", "skill_requirements": ["a"]},
+                    {"name": "goal1", "description": "Local goal 1",
+                        "skill_requirements": ["a"]},
                 ],
                 "plans": [
                     {"name": "plan1", "goal_sequence": ["goal1"]},
@@ -597,9 +643,11 @@ if __name__ == "__main__":
         "social_schemes": [
             {
                 "name": "SchemeA",
-                "description": "Incoming scheme A description.",  # Only used if prioritise_local is False.
+                # Only used if prioritise_local is False.
+                "description": "Incoming scheme A description.",
                 "goals": [
-                    {"name": "goal2", "description": "Incoming goal 2", "skill_requirements": ["b"]},
+                    {"name": "goal2", "description": "Incoming goal 2",
+                        "skill_requirements": ["b"]},
                 ],
                 "plans": [
                     {"name": "plan2", "goal_sequence": ["goal2"]},
@@ -614,7 +662,8 @@ if __name__ == "__main__":
                 "name": "SchemeB",
                 "description": "Incoming scheme B description.",
                 "goals": [
-                    {"name": "goal3", "description": "Incoming goal 3", "skill_requirements": ["c"]},
+                    {"name": "goal3", "description": "Incoming goal 3",
+                        "skill_requirements": ["c"]},
                 ],
                 "plans": [],
                 "missions": [],
@@ -636,7 +685,8 @@ if __name__ == "__main__":
     schemeA = local_fs.get_social_scheme("SchemeA")
     assert schemeA is not None, "SchemeA missing (Test 1)"
     # The description should remain as in local (since local is prioritized).
-    assert schemeA["description"] == "Local scheme A description.", "SchemeA description should not be replaced (Test 1)"
+    assert schemeA[
+        "description"] == "Local scheme A description.", "SchemeA description should not be replaced (Test 1)"
     # Existing goal "goal1" should be there.
     goal1 = next((g for g in schemeA["goals"] if g["name"] == "goal1"), None)
     assert goal1 is not None, "Local goal1 missing (Test 1)"
@@ -647,7 +697,8 @@ if __name__ == "__main__":
     # For SchemeB, it should simply be added.
     schemeB = local_fs.get_social_scheme("SchemeB")
     assert schemeB is not None, "SchemeB not added (Test 1)"
-    assert schemeB["description"] == "Incoming scheme B description.", "SchemeB description incorrect (Test 1)"
+    assert schemeB[
+        "description"] == "Incoming scheme B description.", "SchemeB description incorrect (Test 1)"
 
     # ---------------------- Test 2: prioritise_local = False ----------------------
     # Reinitialize the local functional specification.
@@ -660,7 +711,8 @@ if __name__ == "__main__":
     schemeA = local_fs.get_social_scheme("SchemeA")
     assert schemeA is not None, "SchemeA missing (Test 2)"
     # Now the description should be replaced.
-    assert schemeA["description"] == "Incoming scheme A description.", "SchemeA description not updated (Test 2)"
+    assert schemeA[
+        "description"] == "Incoming scheme A description.", "SchemeA description not updated (Test 2)"
     # The local goal1 may be replaced or overwritten by the merge.
     goal1 = next((g for g in schemeA["goals"] if g["name"] == "goal1"), None)
     # In our implementation for prioritise_local=False, we fully replace the scheme so goal1 should no longer be present.
@@ -672,6 +724,7 @@ if __name__ == "__main__":
     # For SchemeB, it should be added as before.
     schemeB = local_fs.get_social_scheme("SchemeB")
     assert schemeB is not None, "SchemeB missing (Test 2)"
-    assert schemeB["description"] == "Incoming scheme B description.", "SchemeB description incorrect (Test 2)"
+    assert schemeB[
+        "description"] == "Incoming scheme B description.", "SchemeB description incorrect (Test 2)"
 
     print("All tests passed.")

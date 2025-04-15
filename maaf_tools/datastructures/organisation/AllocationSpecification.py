@@ -7,19 +7,17 @@ import warnings
 
 from bloom.generators.rpm.generate_cmd import description
 
-#from typing import Self
+# from typing import Self
 
 try:
     from maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
     from maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
-    from maaf_allocation_node.bidding_logics.bidding_logics_dict import bidding_logics_dict
 
 except:
     from maaf_tools.maaf_tools.datastructures.MaafItem import MaafItem
     from maaf_tools.maaf_tools.datastructures.organisation.MOISEPlus.MoiseModel import MoiseModel
     from maaf_tools.maaf_tools.datastructures.organisation.RoleAllocation import RoleAllocation
-    from maaf_allocation_node.maaf_allocation_node.bidding_logics.bidding_logics_dict import bidding_logics_dict
 
 ##################################################################################################################
 
@@ -48,7 +46,8 @@ class AllocationSpecification(dict, MaafItem):
             allocation_specification = allocation_specification.copy()
 
         else:
-            raise ValueError("The allocation specification must be a dictionary or AllocationSpecification object.")
+            raise ValueError(
+                "The allocation specification must be a dictionary or AllocationSpecification object.")
 
         # Initialize the underlying dict with the provided or default dictionary.
         super().__init__(allocation_specification)
@@ -181,7 +180,8 @@ class AllocationSpecification(dict, MaafItem):
         """
 
         # -> Get ambassador roles
-        ambassador_roles = self.moise_model.structural_specification.get_children_roles(parent_role="Ambassador")
+        ambassador_roles = self.moise_model.structural_specification.get_children_roles(
+            parent_role="Ambassador")
 
         # -> Get agents in group
         agents = self.role_allocation.get_agents_in_group(group_id=group_id)
@@ -189,7 +189,8 @@ class AllocationSpecification(dict, MaafItem):
         # -> Get agents with ambassador role
         ambassadors = []
         for agent in agents:
-            agent_roles = self.role_allocation.get_agent_roles(agent_id=agent, group_id=group_id)
+            agent_roles = self.role_allocation.get_agent_roles(
+                agent_id=agent, group_id=group_id)
             for role in agent_roles:
                 if role in ambassador_roles:
                     ambassadors.append(agent)
@@ -217,7 +218,7 @@ class AllocationSpecification(dict, MaafItem):
         :param group_id: The ID of the group.
         :return: Hierarchy level (e.g., "P1", "P2", "Captain", etc...).
         """
-        #warnings.warn("This method is not implemented yet. Returning 1 as placeholder") # TODO: Implement string based hierarchy
+        # warnings.warn("This method is not implemented yet. Returning 1 as placeholder") # TODO: Implement string based hierarchy
 
         return 1
 
@@ -230,19 +231,23 @@ class AllocationSpecification(dict, MaafItem):
         :return: Bidding logic (function or callable).
         """
         # -> Get the task
-        task = self.moise_model.functional_specification.get_goal(goal_name=goal_name)
+        task = self.moise_model.functional_specification.get_goal(
+            goal_name=goal_name)
 
         if task is None:
-            raise ValueError(f"Task type '{goal_name}' not found in the functional specification.")
+            raise ValueError(
+                f"Task type '{goal_name}' not found in the functional specification.")
 
         # -> Get the bidding logic
         bidding_logic = task.get("bidding_logic", None)
 
         if bidding_logic is None:
-            raise ValueError(f"Bidding logic not found for task type '{goal_name}'.")
+            raise ValueError(
+                f"Bidding logic not found for task type '{goal_name}'.")
 
         elif bidding_logic not in bidding_logics_dict:
-            raise ValueError(f"Bidding logic {bidding_logic} not found for task type '{goal_name}'.")
+            raise ValueError(
+                f"Bidding logic {bidding_logic} not found for task type '{goal_name}'.")
 
         # -> Return the bidding logic function
         return bidding_logics_dict[bidding_logic]
@@ -266,9 +271,11 @@ class AllocationSpecification(dict, MaafItem):
             if property_name in agent_properties:
                 return agent_properties[property_name]
             else:
-                raise ValueError(f"Property '{property_name}' not found for agent ID '{agent_id}'.")
+                raise ValueError(
+                    f"Property '{property_name}' not found for agent ID '{agent_id}'.")
         else:
-            raise ValueError(f"Agent ID '{agent_id}' not found in the allocation specification.")
+            raise ValueError(
+                f"Agent ID '{agent_id}' not found in the allocation specification.")
 
     # ============================================================== Set
 
@@ -294,7 +301,8 @@ class AllocationSpecification(dict, MaafItem):
         :raises ValueError: If the allocation_specification object is not an AllocationSpecification.
         """
         if not isinstance(allocation_specification, AllocationSpecification):
-            raise ValueError("The object to merge must be an AllocationSpecification instance.")
+            raise ValueError(
+                "The object to merge must be an AllocationSpecification instance.")
 
         # Merge the underlying allocation data.
         # If the allocation specification dictionary does not have an "allocation" key,
@@ -334,12 +342,14 @@ class AllocationSpecification(dict, MaafItem):
         # Merge the MOISE model subcomponent.
         if self.moise_model_available and allocation_specification.moise_model is not None:
             if hasattr(self.moise_model, "merge"):
-                self.moise_model.merge(allocation_specification.moise_model, prioritise_local=prioritise_local)
+                self.moise_model.merge(
+                    allocation_specification.moise_model, prioritise_local=prioritise_local)
 
         # Merge the role allocation subcomponent.
         if self.role_allocation is not None and allocation_specification.role_allocation is not None:
             if hasattr(self.role_allocation, "merge"):
-                self.role_allocation.merge(allocation_specification.role_allocation, prioritise_local=prioritise_local)
+                self.role_allocation.merge(
+                    allocation_specification.role_allocation, prioritise_local=prioritise_local)
 
         return True
 
