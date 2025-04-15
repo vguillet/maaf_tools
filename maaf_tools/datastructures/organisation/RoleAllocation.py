@@ -141,7 +141,7 @@ class RoleAllocation(dict, MaafItem):
         # Step 5: Validate team member assignments
         for member in role_allocation.get("team", []):
             # Ensure required keys are present
-            if not all(k in member for k in ("id", "name", "class", "assignments")):
+            if not all(k in member for k in ("id", "assignments")):
                 errors.append(f"Missing required keys in team member: {member}")
                 if stop_at_first_error:
                     return False
